@@ -60,7 +60,7 @@ template<class T> T& Field(void* object, std::size_t offset) {
 }
 
 constexpr char kApiName[] = "NozdorActionNative";
-constexpr char kVersion[] = "0.3.9";
+constexpr char kVersion[] = "0.3.11";
 HANDLE g_log = INVALID_HANDLE_VALUE;
 bool g_enabled = false, g_autoTarget = true, g_captured = false;
 bool g_active = false, g_inFrame = false;
@@ -69,10 +69,14 @@ int g_cursorKeys[2] = {VK_MENU, 0};
 unsigned g_cursorModifiers[2] = {0, 0};
 bool g_keepTarget = false;
 bool g_cursorToggle = false, g_cursorInputAllowed = false;
+bool g_cursorOverUI = false, g_rightMouseConsumed = false;
+HWND g_cursorWindow = nullptr;
+WNDPROC g_previousWindowProc = nullptr;
 action::CursorMode g_cursorMode;
 float g_centerX = 0.5f, g_centerY = 0.5f;
 POINT g_previousCursor{};
-bool g_interactPending = false;
+bool g_interactPending = false, g_cursorInteractPending = false;
+action::CursorPoint g_cursorPick;
 DWORD g_interactTime = 0, g_interactPause = 0;
 float g_range = 40;
 DWORD g_delay = 100, g_heartbeat = 0, g_frames = 0;
@@ -132,8 +136,8 @@ bool CursorKeyHeld() {
         ((GetAsyncKeyState(VK_CONTROL) & 0x8000) ? 2u : 0u) |
         ((GetAsyncKeyState(VK_MENU) & 0x8000) ? 4u : 0u);
     for (unsigned i = 0; i < 2; ++i) {
-        if (g_cursorKeys[i] && action::CursorBindingDown(g_cursorKeys[i], g_cursorModifiers[i], held,
-                                     (GetAsyncKeyState(g_cursorKeys[i]) & 0x8000) != 0)) return true;
+        if (g_cursorKeys[i] && action::CursorGestureDown(g_cursorKeys[i], g_cursorModifiers[i], held,
+                                     (GetAsyncKeyState(g_cursorKeys[i]) & 0x8000) != 0, g_rightMouseConsumed)) return true;
     }
     return false;
 }
@@ -157,7 +161,7 @@ int __cdecl NativeApi(Lua* state) {
             type(state, 21) != 1 || type(state, 22) != 1 || type(state, 23) != 1 ||
             type(state, 24) != 1 || type(state, 25) != 1 || type(state, 26) != 1 ||
             type(state, 27) != 3 || type(state, 28) != 3 || type(state, 29) != 3)
-            return ReplyError(state, "configure expects protocol 6 camera profiles and input settings");
+            return ReplyError(state, "configure expects protocol 8 camera profiles and input settings");
         const double range = Function<ToNumber>(0x84E030)(state, 4);
         const double delay = Function<ToNumber>(0x84E030)(state, 5);
         if (!action::ValidSettings(range, delay))
@@ -223,7 +227,7 @@ int __cdecl NativeApi(Lua* state) {
         char guid[19] = "";
         if (g_pick) std::snprintf(guid, sizeof(guid), "0x%08X%08X",
             static_cast<unsigned>(g_pick >> 32), static_cast<unsigned>(g_pick));
-        Function<PushNumber>(0x84E2A0)(state, 6);
+        Function<PushNumber>(0x84E2A0)(state, 8);
         Function<PushString>(0x84E350)(state, kVersion);
         Function<PushBoolean>(0x84E4D0)(state, g_active);
         Function<PushString>(0x84E350)(state, guid);
@@ -234,12 +238,40 @@ int __cdecl NativeApi(Lua* state) {
         Function<PushBoolean>(0x84E4D0)(state, g_cameraEnabled && CursorIsFree());
         return 9;
     }
+    if (std::strcmp(command, "cursorui") == 0) {
+        if (Function<GetTop>(0x84DBD0)(state) != 3 || type(state, 2) != 1 || type(state, 3) != 1)
+            return ReplyError(state, "cursorui expects two booleans");
+        g_cursorInputAllowed = Function<ToBoolean>(0x84E0B0)(state, 2) != 0;
+        g_cursorOverUI = Function<ToBoolean>(0x84E0B0)(state, 3) != 0;
+        Function<PushBoolean>(0x84E4D0)(state, 1);
+        return 1;
+    }
     if (std::strcmp(command, "interact") == 0) {
         if (Function<GetTop>(0x84DBD0)(state) != 1) return ReplyError(state, "interact takes no arguments");
         if (!g_enabled || !g_cameraEnabled || GetTickCount() - g_heartbeat > 500)
             return ReplyError(state, "Mode is off or paused");
         if (CursorIsFree()) return ReplyError(state, "Free cursor is active");
         g_interactPending = true;
+        g_interactTime = GetTickCount();
+        Function<PushBoolean>(0x84E4D0)(state, 1);
+        return 1;
+    }
+    if (std::strcmp(command, "interactcursor") == 0) {
+        if (Function<GetTop>(0x84DBD0)(state) != 1) return ReplyError(state, "interactcursor takes no arguments");
+        if (!g_cameraEnabled || !g_cursorInputAllowed || GetTickCount() - g_heartbeat > 500 || !CursorIsFree())
+            return ReplyError(state, "Mode is off or paused");
+        if (g_cursorKeys[0] != VK_RBUTTON && g_cursorKeys[1] != VK_RBUTTON)
+            return ReplyError(state, "RMB cursor binding required");
+        RECT rect{};
+        POINT point{};
+        const HWND window = Function<GetWindow>(0x86C6A0)(0);
+        if (!window || !GetClientRect(window, &rect)) return ReplyError(state, "Cursor is outside game window");
+        // A stock left drag can still own relative capture during OnMouseUp; use its saved click point.
+        if (*reinterpret_cast<unsigned*>(0xD4156C) == 1) point = *reinterpret_cast<POINT*>(0xD413F8);
+        else Function<GetCursor>(0x86A0D0)(&point.x, &point.y);
+        g_cursorPick = action::CursorToViewport({point.x, point.y}, rect.right, rect.bottom);
+        if (!g_cursorPick.valid) return ReplyError(state, "Cursor is outside game window");
+        g_cursorInteractPending = true;
         g_interactTime = GetTickCount();
         Function<PushBoolean>(0x84E4D0)(state, 1);
         return 1;
@@ -256,6 +288,7 @@ void ReleaseMouse(const char* reason) {
     g_selection = {};
     g_status = reason;
     g_interactPending = false;
+    g_cursorInteractPending = false;
 }
 
 bool EnsureApi(Lua* state) {
@@ -276,6 +309,84 @@ bool IsForeground() {
     DWORD process = 0;
     GetWindowThreadProcessId(GetForegroundWindow(), &process);
     return process == GetCurrentProcessId();
+}
+
+bool CursorMouseMessage(UINT message, bool bound, bool allowed, bool overUI) {
+    if (message == WM_RBUTTONDOWN || message == WM_RBUTTONDBLCLK) {
+        if (g_rightMouseConsumed && g_cursorMode.wasDown) return true;
+        // A free cursor can release outside the window without delivering WM_RBUTTONUP.
+        g_rightMouseConsumed = false;
+        if (!bound || (overUI && (!allowed || (g_cursorToggle && g_cursorMode.latched)))) return false;
+        g_rightMouseConsumed = true;
+        if (allowed) g_cursorMode.Step(true, g_cursorToggle, g_cameraEnabled, true);
+        return true;
+    }
+    if (message == WM_RBUTTONUP && g_rightMouseConsumed) {
+        g_rightMouseConsumed = false;
+        g_cursorMode.Step(false, g_cursorToggle, g_cameraEnabled, allowed);
+        return true;
+    }
+    return false;
+}
+
+WPARAM CursorMouseFlags(UINT message, WPARAM flags, bool reservedRightMouse) {
+    return reservedRightMouse && message >= WM_MOUSEFIRST && message <= WM_MOUSELAST ? flags & ~WPARAM(MK_RBUTTON) : flags;
+}
+
+bool MaskReservedRightMouse() {
+    BYTE state[256];
+    if (!GetKeyboardState(state)) return false;
+    if (!(state[VK_RBUTTON] & 0x80)) return true;
+    state[VK_RBUTTON] &= 0x7f;
+    return SetKeyboardState(state) != 0;
+}
+
+LRESULT CALLBACK CursorWindowProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+    if (g_rightMouseConsumed) {
+        // Only the client thread's logical RMB is hidden; physical polling and modifiers stay intact.
+        if (!MaskReservedRightMouse()) Log("Could not mask reserved RMB state");
+        wparam = CursorMouseFlags(message, wparam, true);
+    }
+    if (message != WM_RBUTTONDOWN && message != WM_RBUTTONUP && message != WM_RBUTTONDBLCLK) {
+        if (message == WM_KILLFOCUS) g_rightMouseConsumed = false;
+        return CallWindowProcW(g_previousWindowProc, window, message, wparam, lparam);
+    }
+    const bool rightMouse = g_cursorKeys[0] == VK_RBUTTON || g_cursorKeys[1] == VK_RBUTTON;
+    const bool live = g_cameraEnabled && GetTickCount() - g_heartbeat <= 500 && GetForegroundWindow() == window;
+    const unsigned held = ((GetKeyState(VK_SHIFT) & 0x8000) ? 1u : 0u) |
+        ((GetKeyState(VK_CONTROL) & 0x8000) ? 2u : 0u) |
+        ((GetKeyState(VK_MENU) & 0x8000) ? 4u : 0u);
+    bool bound = false;
+    for (unsigned i = 0; i < 2; ++i)
+        if (g_cursorKeys[i] == VK_RBUTTON && action::CursorBindingDown(VK_RBUTTON, g_cursorModifiers[i], held, true)) bound = true;
+    if (CursorMouseMessage(message, live && bound, live && g_cursorInputAllowed, g_cursorOverUI)) {
+        if (!MaskReservedRightMouse()) Log("Could not mask reserved RMB state");
+        return 0;
+    }
+    // A bound RMB over the world stays blocked while UI is open, even with a different modifier held.
+    if ((message == WM_RBUTTONDOWN || message == WM_RBUTTONDBLCLK) && live && rightMouse &&
+        !g_cursorInputAllowed && !g_cursorOverUI) {
+        g_rightMouseConsumed = true;
+        if (!MaskReservedRightMouse()) Log("Could not mask reserved RMB state");
+        return 0;
+    }
+    return CallWindowProcW(g_previousWindowProc, window, message, wparam, lparam);
+}
+
+bool EnsureCursorWindow() {
+    HWND window = Function<GetWindow>(0x86C6A0)(0);
+    if (!window) return false;
+    if (window == g_cursorWindow) return true;
+    if (g_cursorWindow && IsWindow(g_cursorWindow) &&
+        GetWindowLongPtrW(g_cursorWindow, GWLP_WNDPROC) == reinterpret_cast<LONG_PTR>(&CursorWindowProc))
+        SetWindowLongPtrW(g_cursorWindow, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(g_previousWindowProc));
+    const auto previous = reinterpret_cast<WNDPROC>(SetWindowLongPtrW(window, GWLP_WNDPROC,
+        reinterpret_cast<LONG_PTR>(&CursorWindowProc)));
+    if (!previous) return false;
+    g_previousWindowProc = previous;
+    g_cursorWindow = window;
+    g_rightMouseConsumed = false;
+    return true;
 }
 
 void ReturnFreeCursor() {
@@ -384,7 +495,7 @@ const char* RejectTarget(void* player, void* target, float& distance) {
     return squared <= g_range * g_range ? nullptr : "out of acquisition range";
 }
 
-Guid PickUnit(void* world, void* player) {
+Guid PickUnit(void* world, void* player, float cursorX = 0.5f, float cursorY = 0.5f) {
     g_probe = {};
     const float left = Field<float>(world, 0x324), right = Field<float>(world, 0x32C);
     const float bottom = Field<float>(world, 0x320), top = Field<float>(world, 0x328);
@@ -396,8 +507,8 @@ Guid PickUnit(void* world, void* player) {
     PickResult hit{};
     const auto head = Field<std::uintptr_t>(world, 0x2A4);
     g_probe.models = head && !(head & 1);
-    const int kind = Function<Pick>(0x4F9DA0)(world, (left + right) * 0.5f,
-                                           (bottom + top) * 0.5f, 0, &hit);
+    const int kind = Function<Pick>(0x4F9DA0)(world, left + (right - left) * cursorX,
+                                           bottom + (top - bottom) * cursorY, 0, &hit);
     g_probe.kind = kind;
     g_probe.raw = hit.guid;
     g_probe.ray = {hit.end.x - hit.start.x, hit.end.y - hit.start.y, hit.end.z - hit.start.z};
@@ -426,9 +537,9 @@ void PublishProbe(DWORD now) {
     Log(g_targetDiagnostic);
 }
 
-void InteractUnderCrosshair(void* player, DWORD now) {
+void InteractUnderCrosshair(void* player, DWORD now, bool uiReady) {
     const char* reason = "no interactable object under crosshair";
-    if (*reinterpret_cast<unsigned*>(0xD4139C)) reason = "UI execution context not ready";
+    if (!uiReady) reason = "UI execution context not ready";
     else if (now - g_interactTime > 250) reason = "interaction request expired";
     else if ((g_probe.kind == 2 || g_probe.kind == 3) && g_probe.raw) {
         void* object = Function<Resolve>(0x4D4DB0)(g_probe.raw, 1, "NozdorAction", 5);
@@ -461,19 +572,33 @@ void Tick(void* world) {
     if (!EnsureApi(state)) return;
     const DWORD now = GetTickCount();
     const bool foreground = IsForeground();
+    if ((g_cursorKeys[0] == VK_RBUTTON || g_cursorKeys[1] == VK_RBUTTON) && !EnsureCursorWindow()) {
+        ReleaseMouse("right mouse unavailable"); return;
+    }
     const bool freeCursor = g_cursorMode.Step(CursorKeyHeld(), g_cursorToggle, g_cameraEnabled,
         g_cursorInputAllowed && foreground && now - g_heartbeat <= 500);
     if (now - g_heartbeat > 500) { ReleaseMouse("addon heartbeat expired"); return; }
     if (!foreground) { g_cursorReturn = false; ReleaseMouse("focus"); return; }
     if (freeCursor) {
         const bool owned = g_captured;
+        const bool cursorRequest = g_cursorInteractPending;
         ReleaseMouse("cursor key");
         if (owned) g_cursorReturn = true;
         ReturnFreeCursor();
+        if (cursorRequest && g_cursorPick.valid && g_cursorInputAllowed && now - g_interactTime <= 250 &&
+            world == *reinterpret_cast<void**>(0xB7436C) && Field<void*>(world, 0x7E20) &&
+            !*reinterpret_cast<void**>(0xD3F4E4)) {
+            const Guid guid = Function<GetPlayer>(0x4D3790)();
+            void* player = Function<Resolve>(0x4D4DB0)(guid, 0x10, "NozdorAction", 6);
+            if (player && !Function<UnitTest>(0x716490)(player)) {
+                PickUnit(world, player, g_cursorPick.x, g_cursorPick.y);
+                InteractUnderCrosshair(player, now, *reinterpret_cast<unsigned*>(0xD4139C) == 0);
+            }
+        }
         return;
     }
     g_cursorReturn = false;
-    if (!g_enabled) { ReleaseMouse("disabled"); return; }
+    if (!g_enabled || !g_cursorInputAllowed) { ReleaseMouse("disabled"); return; }
     // Wait for interaction UI without releasing capture on failed/instant actions.
     if (g_interactPause && now - g_interactPause < 200) return;
     if (*reinterpret_cast<void**>(0xD3F4E4)) { ReleaseMouse("spell targeting"); return; }
@@ -505,7 +630,9 @@ void Tick(void* world) {
         return;
     }
     g_pick = PickUnit(world, player);
-    if (g_interactPending) { InteractUnderCrosshair(player, now); return; }
+    if (g_interactPending) {
+        InteractUnderCrosshair(player, now, *reinterpret_cast<unsigned*>(0xD4139C) == 0); return;
+    }
     if (!g_autoTarget) { g_pick = 0; g_selection = {}; PublishProbe(now); return; }
     const Guid actual = *reinterpret_cast<Guid*>(0xBD07B0);
     const action::Decision decision = g_selection.Step(g_pick, actual, now, g_delay, g_keepTarget);
@@ -596,13 +723,13 @@ bool Install() {
 }
 } // namespace
 
-extern "C" __declspec(dllexport) unsigned __cdecl NozdorActionVersion() { return 6; }
+extern "C" __declspec(dllexport) unsigned __cdecl NozdorActionVersion() { return 8; }
 
 BOOL WINAPI DllMain(HINSTANCE self, DWORD reason, LPVOID reserved) {
     if (reason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(self);
         OpenLog(self);
-        Log("NozdorAction 0.3.9 / mounted profiles / stock camera / reticles / x86 / exact client code guards");
+        Log("NozdorAction 0.3.11 / mounted profiles / stock camera / reticles / x86 / exact client code guards");
         if (!Install()) {
             if (g_log != INVALID_HANDLE_VALUE) CloseHandle(g_log);
             g_log = INVALID_HANDLE_VALUE;

@@ -1,4 +1,4 @@
-# Nozdor Action 0.3.9
+# Nozdor Action 0.3.12
 
 Scope: extend the working 0.2.2 client-only DLL and addon. Keep source, build output and release packaging under client-prototype. Preserve the original EXE and existing SavedVariables.
 

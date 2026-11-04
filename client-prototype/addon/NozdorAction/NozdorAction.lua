@@ -19,7 +19,7 @@ local cursorKeys = {ALT = 18, LALT = 164, RALT = 165, SHIFT = 16, LSHIFT = 160, 
     CTRL = 17, LCTRL = 162, RCTRL = 163, SPACE = 32, TAB = 9, ESCAPE = 27, ENTER = 13, BACKSPACE = 8,
     INSERT = 45, DELETE = 46, HOME = 36, END = 35, PAGEUP = 33, PAGEDOWN = 34,
     LEFT = 37, UP = 38, RIGHT = 39, DOWN = 40, CAPSLOCK = 20, NUMLOCK = 144, SCROLLLOCK = 145,
-    PAUSE = 19, PRINTSCREEN = 44, BUTTON3 = 4, BUTTON4 = 5, BUTTON5 = 6,
+    PAUSE = 19, PRINTSCREEN = 44, BUTTON2 = 2, BUTTON3 = 4, BUTTON4 = 5, BUTTON5 = 6,
     NUMPADMULTIPLY = 106, NUMPADPLUS = 107, NUMPADMINUS = 109, NUMPADDECIMAL = 110, NUMPADDIVIDE = 111,
     ["-"] = 189, ["="] = 187, ["["] = 219, ["]"] = 221, ["\\"] = 220,
     [";"] = 186, ["'"] = 222, [","] = 188, ["."] = 190, ["/"] = 191, ["`"] = 192}
@@ -81,6 +81,7 @@ reticle:SetAllPoints(crosshair)
 reticle:SetTexture("Interface\\AddOns\\NozdorAction\\Reticles")
 
 local labels = {
+    ["right mouse unavailable"] = L["RMB input is unavailable"],
     active = L["Active"], disabled = L["Off / paused by interface"], ["cursor key"] = L["Paused: free cursor"],
     focus = L["Paused: window not active"],
     interaction = L["Paused: interaction"],
@@ -98,9 +99,20 @@ local function TranslateDiagnostic(text)
     return reason and (L["Target probe: "] .. L[reason] .. details) or L[text]
 end
 
-local function Shown(frame) return frame and frame:IsVisible() end
+local SyncCursorUI
+local cursorUIWatched = setmetatable({}, {__mode = "k"})
+local function Shown(frame)
+    if frame and not cursorUIWatched[frame] and type(frame.HookScript) == "function" then
+        cursorUIWatched[frame] = true
+        local function Changed() if SyncCursorUI then SyncCursorUI() end end
+        frame:HookScript("OnShow", Changed)
+        frame:HookScript("OnHide", Changed)
+    end
+    return frame and frame:IsVisible()
+end
 
 local pauseFrames = {"GameMenuFrame", "InterfaceOptionsFrame", "VideoOptionsFrame", "AudioOptionsFrame",
+    "SettingsPanel", "AuctionHouseFrame",
     "WorldMapFrame", "KeyBindingFrame", "GossipFrame", "QuestFrame", "MerchantFrame", "MailFrame", "LootFrame",
     "TaxiFrame", "BankFrame", "ClassTrainerFrame", "AuctionFrame", "TradeFrame", "ItemTextFrame",
     "GuildBankFrame", "KeyRingFrame", "ColorPickerFrame", "StackSplitFrame",
@@ -108,6 +120,11 @@ local pauseFrames = {"GameMenuFrame", "InterfaceOptionsFrame", "VideoOptionsFram
     "FriendsFrame", "PVPParent", "LFDParentFrame", "LFGParentFrame", "AchievementFrame",
     "TradeSkillFrame", "CraftFrame", "InspectFrame", "ItemSocketingFrame", "MacroFrame",
     "HelpFrame", "CalendarFrame", "DressUpFrame"}
+local panelSlots = {"left", "center", "right", "doublewide", "fullscreen"}
+
+local function SettingsShown()
+    return Shown(InterfaceOptionsFrame) or Shown(SettingsPanel)
+end
 
 local function CanUseCamera()
     if not enabled or not worldReady then return false end
@@ -124,6 +141,12 @@ local function CanRun(ignoreCursor)
     for _, name in ipairs(pauseFrames) do
         if Shown(_G[name]) then return false end
     end
+    -- Query panels actually displayed by the manager, not registered secure helper frames.
+    if type(GetUIPanel) == "function" then
+        for _, slot in ipairs(panelSlots) do
+            if Shown(GetUIPanel(slot)) then return false end
+        end
+    end
     for i = 1, NUM_CONTAINER_FRAMES or 13 do
         if Shown(_G["ContainerFrame" .. i]) then return false end
     end
@@ -138,21 +161,31 @@ local function CanRun(ignoreCursor)
     return true
 end
 
+SyncCursorUI = function()
+    if not NozdorActionDB or type(NozdorActionNative) ~= "function" then return end
+    local focus = GetMouseFocus and GetMouseFocus()
+    local overUI = focus and focus ~= WorldFrame and focus ~= UIParent or false
+    pcall(NozdorActionNative, "cursorui", CanRun(true), overUI)
+end
+
 local interactionWindows = {
     {"GossipFrame", "CloseGossip"}, {"QuestFrame", "CloseQuest"}, {"MerchantFrame", "CloseMerchant"},
     {"ClassTrainerFrame", "CloseTrainer"}, {"MailFrame", "CloseMail"}, {"LootFrame", "CloseLoot"},
     {"ElvLootFrame", "CloseLoot"}, {"BankFrame", "CloseBankFrame"}, {"AuctionFrame", "CloseAuctionHouse"},
     {"GuildBankFrame", "CloseGuildBankFrame"}, {"ItemTextFrame", "CloseItemText"}, {"TaxiFrame", "CloseTaxiMap"},
+    {"AuctionHouseFrame", "CloseAuctionHouse"},
 }
 
 local function CloseInteractionWindow()
     if not CanUseCamera() or GetCurrentKeyBoardFocus() or Shown(settings) or Shown(GameMenuFrame) or
-        Shown(InterfaceOptionsFrame) or Shown(KeyBindingFrame) then return false end
+        SettingsShown() or Shown(KeyBindingFrame) then return false end
     for _, entry in ipairs(interactionWindows) do
         local frame = _G[entry[1]]
         if Shown(frame) then
             local close = _G[entry[2]]
-            if type(close) == "function" then close() else HideUIPanel(frame) end
+            if entry[1] == "AuctionHouseFrame" then HideUIPanel(frame)
+            elseif type(close) == "function" then close() else HideUIPanel(frame) end
+            if entry[1] == "MailFrame" and type(CloseAllBags) == "function" then CloseAllBags() end
             return true
         end
     end
@@ -217,9 +250,9 @@ local function Sync()
         return
     end
     local ok, protocol, version, active, picked, reason, frames, shifted, diagnostic, held = pcall(native, "status")
-    if not ok or protocol ~= 6 then
+    if not ok or protocol ~= 8 then
         nativeActive, cameraApplied = false, false
-        stateText = L["Update BOTH the DLL and addon to 0.3.9"]
+        stateText = L["Update DLL and addon to compatible versions"]
         UpdateReticle()
         return
     end
@@ -239,6 +272,7 @@ local function Sync()
         NozdorActionDB.cursorToggle, CanRun(true), NozdorActionDB.stockCamera, NozdorActionDB.mountStockCamera,
         NozdorActionDB.mountCustom, NozdorActionDB.mountLeftShoulder and -NozdorActionDB.mountShoulder or NozdorActionDB.mountShoulder,
         NozdorActionDB.mountCameraHeight, NozdorActionDB.mountCameraDistance)
+    SyncCursorUI()
     stateText = labels[reason] or tostring(reason)
     if not sent or not accepted then
         stateText = L["Configuration rejected: "] .. L[tostring(errorText or accepted)]
@@ -265,13 +299,22 @@ function A.Interact()
     end
 end
 
+WorldFrame:HookScript("OnMouseUp", function(self, button)
+    if button ~= "LeftButton" or not NozdorActionDB or not CanRun(true) or
+        type(NozdorActionNative) ~= "function" then return end
+    local focus = GetMouseFocus and GetMouseFocus()
+    if focus and focus ~= WorldFrame and focus ~= UIParent then return end
+    local first, _, second = CursorBindings()
+    if first == 2 or second == 2 then pcall(NozdorActionNative, "interactcursor") end
+end)
+
 local function RefreshBindings()
     if not NozdorActionDB then return end
     UpdateCursorBindingState()
     local first, second = GetBindingKey("NOZDORACTION_CURSOR")
     local bad = first and not ParseCursorBinding(first) and first or second and not ParseCursorBinding(second) and second
     if bad and bad ~= cursorWarning then
-        DEFAULT_CHAT_FRAME:AddMessage(string.format(L["Nozdor Action: %s is not a held cursor key. Use a keyboard key or BUTTON3-5."], bad))
+        DEFAULT_CHAT_FRAME:AddMessage(string.format(L["Nozdor Action: %s is not a held cursor key. Use a keyboard key or BUTTON2-5."], bad))
     end
     cursorWarning = bad
     if InCombatLockdown() then return end
@@ -320,7 +363,7 @@ local function CreateSettings()
     settings.name = "Nozdor Action"
     settings:Hide()
     local title = settings:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.9")
+    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.12")
     local scroll = CreateFrame("ScrollFrame", "NozdorActionSettingsScroll", settings, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", settings, "TOPLEFT", 0, -45)
     scroll:SetPoint("BOTTOMRIGHT", settings, "BOTTOMRIGHT", -30, 8)
@@ -407,9 +450,9 @@ local function CreateSettings()
             local isCursor = action == "NOZDORACTION_CURSOR"
             local code, modifiers = ParseCursorBinding(key)
             if isCursor and key ~= "" and not code then
-                DEFAULT_CHAT_FRAME:AddMessage(L["Nozdor Action: invalid cursor key. Use F8, CTRL-F8, BUTTON3, BUTTON4 or BUTTON5."]); return
+                DEFAULT_CHAT_FRAME:AddMessage(L["Nozdor Action: invalid cursor key. Use F8, CTRL-F8, BUTTON2, BUTTON3, BUTTON4 or BUTTON5."]); return
             end
-            local legacyModifier = isCursor and modifierKeys[code] and modifiers == 0
+            local legacyModifier = isCursor and ((modifierKeys[code] and modifiers == 0) or code == 2)
             local old = {GetBindingKey(action)}
             if key ~= "" and not legacyModifier and not SetBinding(key, action) then
                 DEFAULT_CHAT_FRAME:AddMessage(L["Nozdor Action: invalid key. Examples: F6, CTRL-F, BUTTON4."]); return
@@ -437,7 +480,20 @@ local function CreateSettings()
     KeyEditor("NozdorActionCursorKey", L["Cursor key"], L["Apply Cursor"], "NOZDORACTION_CURSOR", -760)
     local cursorHelp = settingsContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     cursorHelp:SetPoint("TOPLEFT", 20, -825); cursorHelp:SetWidth(510); cursorHelp:SetJustifyH("LEFT")
-    cursorHelp:SetText(L["Cursor bindings are also in WoW Key Bindings. Mouse: BUTTON3-5.\nKeyboard/modifier combinations and a second binding are supported.\nStandalone ALT/SHIFT/CTRL use the legacy key; empty Apply unbinds."])
+    cursorHelp:SetText(L["RMB: BUTTON2 here, or use the button below to enable toggle.\nCtrl/Shift/Alt keep cursor; LMB in the world interacts.\nOpen UI blocks switching; clicks on its controls still work."])
+    Button(settingsContent, L["Use RMB to toggle cursor"], 20, -867, 280, function()
+        if InCombatLockdown() then
+            DEFAULT_CHAT_FRAME:AddMessage(L["Nozdor Action: assign keys outside combat."]); return
+        end
+        local old = {GetBindingKey("NOZDORACTION_CURSOR")}
+        for _, key in ipairs(old) do SetBinding(key) end
+        NozdorActionDB.cursorKey = "BUTTON2"
+        NozdorActionDB.cursorUnbound = false
+        NozdorActionDB.cursorToggle = true
+        cursorBindingAssigned = false
+        SaveBindings(GetCurrentBindingSet())
+        RefreshControls()
+    end)
     local extraTitle = settingsContent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     extraTitle:SetPoint("TOPLEFT", 20, -900); extraTitle:SetText(L["Reticle and mounted camera"])
     Button(settingsContent, L["Previous shape"], 20, -935, 150, function()
@@ -525,6 +581,7 @@ driver:SetScript("OnEvent", function(self, event, name)
     end
 end)
 driver:SetScript("OnUpdate", function(self, dt)
+    SyncCursorUI()
     elapsed = elapsed + dt
     if elapsed < 0.1 then return end
     elapsed = 0

@@ -2,6 +2,7 @@
 local frames, environment, categories = {}, {}, {}
 local noop = function() end
 function GetLocale() return TEST_LOCALE end
+function GetMouseFocus() return environment.mouseUI and InterfaceOptionsFrame or WorldFrame end
 local function Region(name, parent)
     local object = {name = name, parent = parent, scripts = {}, events = {}, shown = true, textures = {}}
     function object:GetName() return self.name end
@@ -12,6 +13,13 @@ local function Region(name, parent)
     function object:SetWidth(value) self.width = value end
     function object:SetHeight(value) self.height = value end
     function object:SetScript(event, callback) self.scripts[event] = callback end
+    function object:HookScript(event, callback)
+        local original = self.scripts[event]
+        self.scripts[event] = function(...)
+            if original then original(...) end
+            callback(...)
+        end
+    end
     function object:RegisterEvent(event) self.events[event] = true end
     function object:SetText(text) self.text = text end
     function object:SetVertexColor(r, g, b) self.color = {r, g, b} end
@@ -76,6 +84,16 @@ function InterfaceOptionsFrame_OpenToCategory(panel)
 end
 function HideUIPanel(panel) panel:Hide() end
 function ShowUIPanel(panel) panel:Show() end
+environment.panels = {}
+function GetUIPanel(slot) return environment.panels[slot] end
+local closedBags = 0
+function CloseAllBags()
+    closedBags = closedBags + 1
+    for i = 1, NUM_CONTAINER_FRAMES or 13 do
+        if _G["ContainerFrame" .. i] then _G["ContainerFrame" .. i]:Hide() end
+    end
+    if ElvUI_ContainerFrame then ElvUI_ContainerFrame:Hide() end
+end
 function LoadAddOn() error("Binding UI already mocked") end
 function GetCurrentKeyBoardFocus() return environment.focus end
 function IsAltKeyDown() return environment.alt end
@@ -112,6 +130,7 @@ function GetBindingAction(key)
 end
 function GetBindingKey(action) return table.unpack(environment.bindings[action]) end
 function SetBinding(key, action)
+    if key == "BUTTON1" or key == "BUTTON2" or key:match("%-BUTTON2$") then return false end
     if not key:match("^[A-Z0-9%-]+$") then return false end
     for _, keys in pairs(environment.bindings) do
         for i = #keys, 1, -1 do if keys[i] == key then table.remove(keys, i) end end
@@ -170,17 +189,27 @@ assert(NozdorActionSettingsScroll.scrollChild == NozdorActionSettingsContent)
 assert(#UISpecialFrames == 0, "Settings belong to standard options, not a floating dialog")
 assert(not NozdorActionCrosshair:IsShown())
 local native = {active = false, reason = "disabled", config = {}, interactions = 0,
-    diagnostic = "Target probe: terrain under crosshair; kind=1", protocol = 6}
+    diagnostic = "Target probe: terrain under crosshair; kind=1", protocol = 8}
 function NozdorActionNative(command, ...)
-    if command == "status" then
-        return native.protocol, "0.3.9", native.active, "", native.reason, 10, native.config[5], native.diagnostic, environment.cursorHeld
+    if command == "cursorui" then
+        assert(select("#", ...) == 2)
+        native.cursorAllowed, native.overUI = ...
+        assert(type(native.cursorAllowed) == "boolean" and type(native.overUI) == "boolean")
+        return true
+    elseif command == "status" then
+        return native.protocol, "0.3.11", native.active, "", native.reason, 10, native.config[5], native.diagnostic, environment.cursorHeld
+    elseif command == "interactcursor" then
+        assert(select("#", ...) == 0)
+        if not environment.cursorHeld or not native.cursorAllowed or not native.config[5] then return false end
+        native.cursorInteractions = (native.cursorInteractions or 0) + 1
+        return true
     elseif command == "interact" then
         assert(select("#", ...) == 0, "One shared interaction action")
         native.interactions = native.interactions + 1
         return true
     end
     assert(command == "configure")
-    assert(select("#", ...) == 28, "Protocol 6 requires 28 configure values")
+    assert(select("#", ...) == 28, "Protocol 8 requires 28 configure values")
     native.config = {...}
     native.active = native.config[1]
     native.reason = native.active and "active" or "disabled"
@@ -242,14 +271,17 @@ assert(NozdorActionSettings:IsShown() and not NozdorActionSettings:IsVisible(),
 for _, name in ipairs({"GameMenuFrame", "WorldMapFrame", "InterfaceOptionsFrame", "KeyBindingFrame",
     "GossipFrame", "QuestFrame", "MerchantFrame", "MailFrame", "LootFrame", "TaxiFrame",
     "BankFrame", "ClassTrainerFrame", "AuctionFrame", "TradeFrame", "ItemTextFrame",
-    "VideoOptionsFrame", "AudioOptionsFrame", "GuildBankFrame", "KeyRingFrame", "ColorPickerFrame", "StackSplitFrame"}) do
+    "VideoOptionsFrame", "AudioOptionsFrame", "GuildBankFrame", "KeyRingFrame", "ColorPickerFrame", "StackSplitFrame",
+    "SettingsPanel", "AuctionHouseFrame"}) do
     if not _G[name] then _G[name] = Region(nil, UIParent); _G[name]:Hide() end
     _G[name]:Show(); Update()
     assert(not native.config[1] and native.config[5], name .. " pauses input only")
+    assert(not native.cursorAllowed, name .. " blocks RMB toggles")
     local count = native.interactions; NozdorAction.Interact()
     assert(native.interactions == count, name .. " blocks interact")
     _G[name]:Hide(); Update()
     assert(native.config[1], name .. " resumes without toggle")
+    assert(native.cursorAllowed, name .. " restores permission, not a cursor toggle")
 end
 -- Repeated interaction closes the window before the paused-input gate can reject it.
 local closedGossip = 0
@@ -265,6 +297,19 @@ assert(native.interactions == beforeClose + 1, "A later press can interact after
 GossipFrame:Show(); NozdorAction.Toggle(); NozdorAction.Interact()
 assert(GossipFrame:IsVisible() and closedGossip == 1, "OFF leaves dialogs alone")
 GossipFrame:Hide(); NozdorAction.Toggle(); Update()
+-- Only repeat-interaction on mail closes bags, including the ElvUI container hook.
+ContainerFrame1, ContainerFrame2 = Region(nil, UIParent), Region(nil, UIParent)
+ElvUI_ContainerFrame = Region(nil, UIParent)
+ContainerFrame1:Hide(); ContainerFrame2:Hide(); ElvUI_ContainerFrame:Hide()
+function CloseMail() MailFrame:Hide() end
+local bagsBeforeMail, interactionsBeforeMail = closedBags, native.interactions
+GossipFrame:Show(); ContainerFrame1:Show(); NozdorAction.Interact()
+assert(ContainerFrame1:IsVisible() and closedBags == bagsBeforeMail, "Other dialogs leave bags alone")
+MailFrame:Show(); ContainerFrame2:Show(); ElvUI_ContainerFrame:Show(); Update()
+NozdorAction.Interact(); Update()
+assert(not MailFrame:IsVisible() and not ContainerFrame1:IsVisible() and not ContainerFrame2:IsVisible())
+assert(not ElvUI_ContainerFrame:IsVisible() and closedBags == bagsBeforeMail + 1)
+assert(native.interactions == interactionsBeforeMail and native.cursorAllowed, "Mail closes bags without a new interaction")
 -- Scan visible bags and registered panels dynamically, including load-on-demand addon windows.
 local function PausesAndResumes(name)
     _G[name] = Region(nil, UIParent)
@@ -282,6 +327,29 @@ UIPanelWindows = {CharacterFrame = {}, TradeSkillFrame = {}, MissingLazyPanel = 
 SetWorldFrameID3SecureHandler = Region(nil, UIParent)
 Update()
 assert(native.config[1] and NozdorActionCrosshair:IsShown(), "Registered secure helper is not an open window")
+-- The actual panel manager identifies replacement windows with arbitrary names.
+for _, slot in ipairs({"left", "center", "right", "doublewide", "fullscreen"}) do
+    local customPanel = Region("NozdorCustomPanel", UIParent)
+    customPanel:Hide(); environment.panels[slot] = customPanel; Update()
+    customPanel:Show()
+    assert(not native.cursorAllowed, "Managed panel show immediately pauses capture: " .. slot)
+    Update()
+    assert(not native.config[1] and native.config[5] and not NozdorActionCrosshair:IsShown())
+    customPanel:Hide(); Update()
+    assert(native.config[1] and native.cursorAllowed)
+    environment.panels[slot] = nil
+end
+-- The custom auction's OnHide performs its own C_AuctionHouse close operation.
+local closedAuctions = 0
+AuctionHouseFrame:SetScript("OnHide", function() closedAuctions = closedAuctions + 1 end)
+AuctionHouseFrame:Show(); Update()
+assert(not native.config[1] and not native.cursorAllowed)
+local beforeAuction = native.interactions
+NozdorAction.Interact()
+assert(closedAuctions == 1 and native.interactions == beforeAuction and native.cursorAllowed)
+MailFrame:Show(); SettingsPanel:Show(); NozdorAction.Interact()
+assert(MailFrame:IsVisible(), "New settings window protects the dialog behind it")
+SettingsPanel:Hide(); MailFrame:Hide(); Update()
 PausesAndResumes("CharacterFrame")
 PausesAndResumes("TradeSkillFrame")
 table.insert(UISpecialFrames, "ElvUI_ContainerFrame")
@@ -484,6 +552,49 @@ NozdorActionCursorKey:SetText("ALT"); Click(Button("Apply Cursor"))
 assert(not NozdorActionDB.cursorUnbound and native.config[16] == 18 and not GetBindingKey("NOZDORACTION_CURSOR"))
 InterfaceOptionsFrame:Hide(); Update()
 
+-- RMB uses the native path because the stock binding API reserves BUTTON2.
+NozdorAction.OpenSettings()
+Check(NozdorActionCursorToggle, false)
+Click(Button("Use RMB to toggle cursor"))
+assert(NozdorActionDB.cursorKey == "BUTTON2" and NozdorActionDB.cursorToggle)
+assert(native.config[16] == 2 and native.config[17] == 0 and native.config[21])
+assert(not GetBindingKey("NOZDORACTION_CURSOR") and not native.cursorAllowed)
+environment.mouseUI = true; Update()
+assert(native.overUI and not native.cursorAllowed, "RMB remains a UI click in open settings")
+environment.mouseUI = nil; InterfaceOptionsFrame:Hide(); Update()
+assert(not native.overUI and native.cursorAllowed)
+ContainerFrame1:Show()
+assert(not native.cursorAllowed, "Showing a watched bag blocks RMB immediately")
+driver.scripts.OnUpdate(driver, 0.001)
+assert(not native.cursorAllowed, "An open bag blocks capture without waiting for the 100 ms configure tick")
+ContainerFrame1:Hide(); driver.scripts.OnUpdate(driver, 0.001)
+assert(native.cursorAllowed)
+environment.cursorHeld = true; Update()
+local cursorClicks = native.cursorInteractions or 0
+WorldFrame.scripts.OnMouseUp(WorldFrame, "LeftButton")
+assert(native.cursorInteractions == cursorClicks + 1, "Free cursor LMB interacts at the cursor, not reticle")
+WorldFrame.scripts.OnMouseUp(WorldFrame, "RightButton")
+assert(native.cursorInteractions == cursorClicks + 1)
+environment.mouseUI = true
+WorldFrame.scripts.OnMouseUp(WorldFrame, "LeftButton")
+assert(native.cursorInteractions == cursorClicks + 1, "Cell/UI clicks never become world interaction")
+environment.mouseUI = nil; environment.focus = true
+WorldFrame.scripts.OnMouseUp(WorldFrame, "LeftButton")
+assert(native.cursorInteractions == cursorClicks + 1, "Typing blocks pointer interaction")
+environment.focus = nil; ContainerFrame1:Show(); Update()
+WorldFrame.scripts.OnMouseUp(WorldFrame, "LeftButton")
+assert(native.cursorInteractions == cursorClicks + 1, "Bags block pointer interaction behind the panel")
+ContainerFrame1:Hide(); environment.cursorHeld = nil; Update()
+WorldFrame.scripts.OnMouseUp(WorldFrame, "LeftButton")
+assert(native.cursorInteractions == cursorClicks + 1, "Mouse-look LMB does not dispatch pointer interaction")
+NozdorAction.OpenSettings()
+NozdorActionCursorKey:SetText("CTRL-BUTTON2"); Click(Button("Apply Cursor"))
+assert(native.config[16] == 2 and native.config[17] == 2)
+assert(not GetBindingKey("NOZDORACTION_CURSOR"))
+NozdorActionCursorKey:SetText("ALT"); Click(Button("Apply Cursor"))
+Check(NozdorActionCursorToggle, false)
+InterfaceOptionsFrame:Hide(); Update()
+
 -- Shared XML binding dispatches once on release, never on repeated key-down.
 local xmlFile = assert(io.open(ADDON_FILE:gsub("NozdorAction%.lua$", "Bindings.xml"), "rb"))
 local xml = xmlFile:read("*a"); xmlFile:close()
@@ -527,7 +638,7 @@ local messages = {}
 DEFAULT_CHAT_FRAME.AddMessage = function(self, message) messages[#messages + 1] = message end
 environment.focus = true; Update()
 SlashCmdList.NOZDORACTION("status")
-assert(not native.config[1] and messages[1]:find("0.3.9", 1, true))
+assert(not native.config[1] and messages[1]:find("0.3.11", 1, true))
 if TEST_LOCALE == "ruRU" then
     assert(BINDING_NAME_NOZDORACTION_SETTINGS == "Открыть настройки")
     assert(BINDING_NAME_NOZDORACTION_CURSOR == "Свободный курсор")
@@ -548,9 +659,9 @@ NozdorActionDB.range = 300; Event("ADDON_LOADED")
 assert(NozdorActionDB.range == 300 and native.config[3] == 300, "Preserve saved 300-yard range on load")
 NozdorActionDB.range = 301; Event("ADDON_LOADED")
 assert(NozdorActionDB.range == 40 and native.config[3] == 40, "Reject saved range beyond limit")
-native.protocol = 5; Update()
+native.protocol = 7; Update()
 assert(not NozdorActionCrosshair:IsShown(), "Reject old native protocol")
-native.protocol = 6; Update()
+native.protocol = 8; Update()
 NozdorActionNative = nil; Update()
 assert(not NozdorActionCrosshair:IsShown(), "Missing DLL hides reticle")
-print("PASS: protocol6; camera profiles; atlas reticles; dialog close; cursor bindings; target retention; UI gates")
+print("PASS: protocol8; camera profiles; atlas reticles; dialog close; cursor bindings; target retention; UI gates")

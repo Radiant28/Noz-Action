@@ -128,6 +128,34 @@ int main(int argc, char** argv) {
     assert(!action::ValidCursorBinding(VK_F8, 1.5));
     assert(!action::ValidCursorBinding(VK_F8, std::numeric_limits<double>::quiet_NaN()));
     assert(action::CursorBindingDown(VK_XBUTTON1, 0, 0, true));
+    assert(action::ValidCursorBinding(VK_RBUTTON, 0));
+    assert(action::CursorBindingDown(VK_RBUTTON, 0, 0, true));
+    assert(action::CursorBindingDown(VK_RBUTTON, 0, 1, true));
+    assert(action::CursorBindingDown(VK_RBUTTON, 0, 2, true));
+    assert(action::CursorBindingDown(VK_RBUTTON, 0, 4, true));
+    assert(action::CursorBindingDown(VK_RBUTTON, 2, 2, true));
+    assert(!action::CursorBindingDown(VK_RBUTTON, 2, 3, true));
+    for (unsigned modifiers : {0u, 1u, 2u, 4u, 7u}) {
+        assert(action::CursorGestureDown(VK_RBUTTON, 0, modifiers, true, true));
+        assert(!action::CursorGestureDown(VK_RBUTTON, 0, modifiers, false, true));
+        assert(!action::CursorGestureDown(VK_RBUTTON, 0, modifiers, true, false));
+    }
+    action::CursorMode rmb;
+    rmb.Step(false, true, true, true);
+    assert(rmb.Step(true, true, true, true));
+    for (unsigned modifiers : {1u, 0u, 2u, 0u, 4u, 0u})
+        assert(rmb.Step(action::CursorGestureDown(VK_RBUTTON, 0, modifiers, true, true), true, true, true));
+    assert(rmb.Step(false, true, true, true));
+    assert(rmb.Step(action::CursorGestureDown(VK_RBUTTON, 0, 0, true, true), false, true, true));
+    assert(rmb.Step(action::CursorGestureDown(VK_RBUTTON, 0, 2, true, true), false, true, true));
+    assert(!rmb.Step(false, false, true, true));
+    auto pickPoint = action::CursorToViewport({320, 180}, 1280, 720);
+    assert(pickPoint.valid && pickPoint.x == 0.25f && pickPoint.y == 0.75f);
+    assert(action::CursorToViewport({0, 0}, 1920, 1080).y == 1);
+    assert(!action::CursorToViewport({1280, 100}, 1280, 720).valid);
+    assert(!action::CursorToViewport({20, -1}, 1280, 720).valid);
+    assert(!action::CursorToViewport({20, 720}, 1280, 720).valid);
+    assert(!action::CursorToViewport({0, 0}, 0, 720).valid);
     assert(!action::CursorBindingDown(VK_XBUTTON1, 0, 1, true));
     assert(action::CursorBindingDown(VK_XBUTTON2, 3, 3, true));
     assert(!action::CursorBindingDown(VK_XBUTTON2, 3, 2, true));

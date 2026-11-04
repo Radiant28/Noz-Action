@@ -15,9 +15,20 @@ inline bool ValidCursorBinding(double key, double modifiers) {
 }
 inline bool CursorBindingDown(int key, unsigned required, unsigned held, bool down) {
     if (!key || !down) return false;
+    if (key == 2 && !required) return true;
     // Standalone modifiers retain the legacy Alt/Shift/Ctrl cursor behavior.
     if (!required && (key == 16 || key == 17 || key == 18 || (key >= 160 && key <= 165))) return true;
     return required == held;
+}
+inline bool CursorGestureDown(int key, unsigned required, unsigned held, bool down, bool ownsRightMouse) {
+    // Match RMB modifiers only at mouse-down; changing them cannot end/restart an owned gesture.
+    if (key == 2) return down && ownsRightMouse;
+    return CursorBindingDown(key, required, held, down);
+}
+struct CursorPoint { float x = 0.5f, y = 0.5f; bool valid = false; };
+inline CursorPoint CursorToViewport(CursorPixel point, long width, long height) {
+    if (width <= 0 || height <= 0 || point.x < 0 || point.y < 0 || point.x >= width || point.y >= height) return {};
+    return {static_cast<float>(point.x) / width, 1 - static_cast<float>(point.y) / height, true};
 }
 struct CursorMode {
     bool latched = false, wasDown = false, wasAllowed = false;
