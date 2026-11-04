@@ -1,0 +1,14 @@
+<Bindings>
+    <Binding name="NOZDORACTION_TOGGLE" header="NOZDORACTION">
+        NozdorAction.Toggle()
+    </Binding>
+    <Binding name="NOZDORACTION_SETTINGS">
+        NozdorAction.OpenSettings()
+    </Binding>
+    <Binding name="NOZDORACTION_INTERACT" runOnUp="true">
+        if keystate == "up" then NozdorAction.Interact() end
+    </Binding>
+    <Binding name="NOZDORACTION_CURSOR" runOnUp="true">
+        NozdorAction.Cursor()
+    </Binding>
+</Bindings>

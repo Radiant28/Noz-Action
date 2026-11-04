@@ -1,0 +1,552 @@
+{
+  "exe": "WoW.exe",
+  "md5": "9a21e982d20f6b323cc9b84e09f116db",
+  "sha256": "c33f54116161b0baf3d6f3b58276688336e96c50a80e921f10a8d5a6c38a4a60",
+  "image_base": "0x400000",
+  "sections": [
+    {
+      "name": ".text",
+      "rva": 4096,
+      "virtual_size": 6149043,
+      "raw_offset": 1024,
+      "raw_size": 6149120
+    },
+    {
+      "name": ".rdata",
+      "rva": 6156288,
+      "virtual_size": 878201,
+      "raw_offset": 6150144,
+      "raw_size": 878592
+    },
+    {
+      "name": ".data",
+      "rva": 7036928,
+      "virtual_size": 3253512,
+      "raw_offset": 7028736,
+      "raw_size": 495104
+    },
+    {
+      "name": ".zdata",
+      "rva": 10293248,
+      "virtual_size": 4096,
+      "raw_offset": 7523840,
+      "raw_size": 4096
+    },
+    {
+      "name": ".tls",
+      "rva": 10297344,
+      "virtual_size": 25,
+      "raw_offset": 7527936,
+      "raw_size": 512
+    },
+    {
+      "name": ".rsrc\u0000\u0019",
+      "rva": 10301440,
+      "virtual_size": 335872,
+      "raw_offset": 7528448,
+      "raw_size": 335360
+    },
+    {
+      "name": ".     \u0000\u0007",
+      "rva": 10637312,
+      "virtual_size": 16384,
+      "raw_offset": 7863808,
+      "raw_size": 16384
+    }
+  ],
+  "ranges_checked": 49,
+  "ranges_matching": 48,
+  "scope": "Only saved code ranges compared; callees, data and runtime unverified.",
+  "results": [
+    {
+      "name": "ClntObjMgrGetActivePlayer",
+      "ida_va": "0x4d3790",
+      "local_va": "0x4d3790",
+      "file_offset": "0xd2b90",
+      "size": 43,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "EnumVisibleObjects",
+      "ida_va": "0x4d4b30",
+      "local_va": "0x4d4b30",
+      "file_offset": "0xd3f30",
+      "size": 117,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "ClntObjMgrObjectPtr",
+      "ida_va": "0x4d4db0",
+      "local_va": "0x4d4db0",
+      "file_offset": "0xd41b0",
+      "size": 82,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGWorldFrame::GetActiveCamera",
+      "ida_va": "0x4f5960",
+      "local_va": "0x4f5960",
+      "file_offset": "0xf4d60",
+      "size": 19,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_4F6450",
+      "ida_va": "0x4f6450",
+      "local_va": "0x4f6450",
+      "file_offset": "0xf5850",
+      "size": 265,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_4F6D20",
+      "ida_va": "0x4f6d20",
+      "local_va": "0x4f6d20",
+      "file_offset": "0xf6120",
+      "size": 556,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_4F9550",
+      "ida_va": "0x4f9550",
+      "local_va": "0x4f9550",
+      "file_offset": "0xf8950",
+      "size": 990,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_4F9930",
+      "ida_va": "0x4f9930",
+      "local_va": "0x4f9930",
+      "file_offset": "0xf8d30",
+      "size": 1124,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_4F9DA0",
+      "ida_va": "0x4f9da0",
+      "local_va": "0x4f9da0",
+      "file_offset": "0xf91a0",
+      "size": 459,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGWorldFrame::OnLayerUpdate",
+      "ida_va": "0x4fa040",
+      "local_va": "0x4fa040",
+      "file_offset": "0xf9440",
+      "size": 817,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGWorldFrame::OnWorldUpdate",
+      "ida_va": "0x4fa5f0",
+      "local_va": "0x4fa5f0",
+      "file_offset": "0xf99f0",
+      "size": 1493,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGWorldFrame::RenderWorld",
+      "ida_va": "0x4faf90",
+      "local_va": "0x4faf90",
+      "file_offset": "0xfa390",
+      "size": 233,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGGameUI::Target",
+      "ida_va": "0x524bf0",
+      "local_va": "0x524bf0",
+      "file_offset": "0x123ff0",
+      "size": 965,
+      "match": false,
+      "different_bytes": 13,
+      "first_difference": "0x1d1"
+    },
+    {
+      "name": "TargetNearestEnemy",
+      "ida_va": "0x524fc0",
+      "local_va": "0x524fc0",
+      "file_offset": "0x1243c0",
+      "size": 772,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGInputControl::GetActive",
+      "ida_va": "0x5f95d0",
+      "local_va": "0x5f95d0",
+      "file_offset": "0x1f89d0",
+      "size": 6,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGInputControl::SetControlBit",
+      "ida_va": "0x5fa170",
+      "local_va": "0x5fa170",
+      "file_offset": "0x1f9570",
+      "size": 682,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGInputControl::UnsetControlBit",
+      "ida_va": "0x5fa450",
+      "local_va": "0x5fa450",
+      "file_offset": "0x1f9850",
+      "size": 601,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGInputControl::UpdateMouseMode",
+      "ida_va": "0x5fa890",
+      "local_va": "0x5fa890",
+      "file_offset": "0x1f9c90",
+      "size": 126,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGInputControl::OnMouseMoveRel",
+      "ida_va": "0x5fab70",
+      "local_va": "0x5fab70",
+      "file_offset": "0x1f9f70",
+      "size": 233,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGInputControl::SetFacing",
+      "ida_va": "0x5fb260",
+      "local_va": "0x5fb260",
+      "file_offset": "0x1fa660",
+      "size": 306,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CInputControl::UpdatePlayer",
+      "ida_va": "0x5fbbc0",
+      "local_va": "0x5fbbc0",
+      "file_offset": "0x1fafc0",
+      "size": 588,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "Lua_MouselookStart",
+      "ida_va": "0x5fcc10",
+      "local_va": "0x5fcc10",
+      "file_offset": "0x1fc010",
+      "size": 73,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "Lua_MouselookStop",
+      "ida_va": "0x5fc890",
+      "local_va": "0x5fc890",
+      "file_offset": "0x1fbc90",
+      "size": 66,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGCamera::UpdateFreeLookFacing",
+      "ida_va": "0x6020b0",
+      "local_va": "0x6020b0",
+      "file_offset": "0x2014b0",
+      "size": 788,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGCamera::SyncFreeLookFacing",
+      "ida_va": "0x6023d0",
+      "local_va": "0x6023d0",
+      "file_offset": "0x2017d0",
+      "size": 560,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_606F90",
+      "ida_va": "0x606f90",
+      "local_va": "0x606f90",
+      "file_offset": "0x206390",
+      "size": 2923,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_607B00",
+      "ida_va": "0x607b00",
+      "local_va": "0x607b00",
+      "file_offset": "0x206f00",
+      "size": 197,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_607CB0",
+      "ida_va": "0x607cb0",
+      "local_va": "0x607cb0",
+      "file_offset": "0x2070b0",
+      "size": 306,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "Lua_UnitCanAttack",
+      "ida_va": "0x60d730",
+      "local_va": "0x60d730",
+      "file_offset": "0x20cb30",
+      "size": 158,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "Lua_UnitIsDead",
+      "ida_va": "0x60f480",
+      "local_va": "0x60f480",
+      "file_offset": "0x20e880",
+      "size": 244,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGUnit_C::CanAttack",
+      "ida_va": "0x729740",
+      "local_va": "0x729740",
+      "file_offset": "0x328b40",
+      "size": 815,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGUnit_C::CanAttack_0",
+      "ida_va": "0x729a70",
+      "local_va": "0x729a70",
+      "file_offset": "0x328e70",
+      "size": 188,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGWorldFrame::Intersect",
+      "ida_va": "0x77f310",
+      "local_va": "0x77f310",
+      "file_offset": "0x37e710",
+      "size": 9,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "TraceLine",
+      "ida_va": "0x7a3b70",
+      "local_va": "0x7a3b70",
+      "file_offset": "0x3a2f70",
+      "size": 372,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CMovement::GetPosition",
+      "ida_va": "0x4f4460",
+      "local_va": "0x4f4460",
+      "file_offset": "0xf3860",
+      "size": 157,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "CGUnit_C:SetPosition",
+      "ida_va": "0x6e6ef0",
+      "local_va": "0x6e6ef0",
+      "file_offset": "0x2e62f0",
+      "size": 30,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_716490",
+      "ida_va": "0x716490",
+      "local_va": "0x716490",
+      "file_offset": "0x315890",
+      "size": 17,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_518E40",
+      "ida_va": "0x518e40",
+      "local_va": "0x518e40",
+      "file_offset": "0x118240",
+      "size": 231,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_512CD0",
+      "ida_va": "0x512cd0",
+      "local_va": "0x512cd0",
+      "file_offset": "0x1120d0",
+      "size": 39,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_5FBA60",
+      "ida_va": "0x5fba60",
+      "local_va": "0x5fba60",
+      "file_offset": "0x1fae60",
+      "size": 352,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "EventSetMouseMode",
+      "ida_va": "0x47d690",
+      "local_va": "0x47d690",
+      "file_offset": "0x7ca90",
+      "size": 109,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_512D60",
+      "ida_va": "0x512d60",
+      "local_va": "0x512d60",
+      "file_offset": "0x112160",
+      "size": 83,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_512DC0",
+      "ida_va": "0x512dc0",
+      "local_va": "0x512dc0",
+      "file_offset": "0x1121c0",
+      "size": 93,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_5FE880",
+      "ida_va": "0x5fe880",
+      "local_va": "0x5fe880",
+      "file_offset": "0x1fdc80",
+      "size": 9,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_601D60",
+      "ida_va": "0x601d60",
+      "local_va": "0x601d60",
+      "file_offset": "0x201160",
+      "size": 298,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_4F7530",
+      "ida_va": "0x4f7530",
+      "local_va": "0x4f7530",
+      "file_offset": "0xf6930",
+      "size": 137,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_4F7350",
+      "ida_va": "0x4f7350",
+      "local_va": "0x4f7350",
+      "file_offset": "0xf6750",
+      "size": 479,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "sub_4F7650",
+      "ida_va": "0x4f7650",
+      "local_va": "0x4f7650",
+      "file_offset": "0xf6a50",
+      "size": 362,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    },
+    {
+      "name": "?__uncaught_exception@@YA_NXZ_2",
+      "ida_va": "0x7fd620",
+      "local_va": "0x7fd620",
+      "file_offset": "0x3fca20",
+      "size": 12,
+      "match": true,
+      "different_bytes": 0,
+      "first_difference": null
+    }
+  ]
+}

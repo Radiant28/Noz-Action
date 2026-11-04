@@ -1,0 +1,1910 @@
+{
+  "scope": "Read-only IDA follow-up for native Lua bridge. ToNumber/Type signatures require L,index despite truncated decompiler prototypes.",
+  "functions": [
+    {
+      "address": "0x817db0",
+      "name": "GetLuaState",
+      "size": "0x6",
+      "bytes": "a18cf7d300c3",
+      "readScope": "Complete IDA function range",
+      "assembly": {
+        "name": "GetLuaState",
+        "start_ea": "0x817db0",
+        "return_type": "int",
+        "arguments": [],
+        "stack_frame": [],
+        "lines": [
+          {
+            "segment": ".text",
+            "address": "0x817db0",
+            "instruction": "mov eax, dword_D3F78C"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817db5",
+            "instruction": "retn"
+          }
+        ]
+      },
+      "decompilation": {
+        "result": "/* line: 0, address: 0x817db0 */ int GetLuaState()\n/* line: 1 */ {\n/* line: 2, address: 0x817db5 */     return dword_D3F78C;\n/* line: 3 */ }"
+      }
+    },
+    {
+      "address": "0x817f90",
+      "name": "FrameScript::RegisterFunction",
+      "size": "0x39",
+      "bytes": "558bec8b450c568b358cf7d3006a005056e85a6403008b4d085156e8a06303006afe56e8085d030068eed8ffff56e8ad69030083c4245e5dc3",
+      "readScope": "Complete IDA function range",
+      "assembly": {
+        "name": "FrameScript::RegisterFunction",
+        "start_ea": "0x817f90",
+        "return_type": "int",
+        "arguments": [
+          {
+            "name": "arg0",
+            "type": "const char *"
+          },
+          {
+            "name": "arg1",
+            "type": "int"
+          }
+        ],
+        "stack_frame": [
+          {
+            "name": "__saved_registers",
+            "offset": "0x4",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "__return_address",
+            "offset": "0x8",
+            "size": "0x4",
+            "type": "_UNKNOWN *"
+          },
+          {
+            "name": "arg_0",
+            "offset": "0xc",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg_4",
+            "offset": "0x10",
+            "size": "0x4",
+            "type": "_DWORD"
+          }
+        ],
+        "lines": [
+          {
+            "segment": ".text",
+            "address": "0x817f90",
+            "instruction": "push ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817f91",
+            "instruction": "mov ebp, esp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817f93",
+            "instruction": "mov eax, [ebp+arg_4]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817f96",
+            "instruction": "push esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817f97",
+            "instruction": "mov esi, dword_D3F78C"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817f9d",
+            "instruction": "push 0"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817f9f",
+            "instruction": "push eax"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fa0",
+            "instruction": "push esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fa1",
+            "instruction": "call FrameScript__pushcclosure"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fa6",
+            "instruction": "mov ecx, [ebp+arg_0]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fa9",
+            "instruction": "push ecx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817faa",
+            "instruction": "push esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fab",
+            "instruction": "call FrameScript__PushString"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fb0",
+            "instruction": "push 0FFFFFFFEh"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fb2",
+            "instruction": "push esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fb3",
+            "instruction": "call sub_84DCC0"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fb8",
+            "instruction": "push 0FFFFD8EEh"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fbd",
+            "instruction": "push esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fbe",
+            "instruction": "call sub_84E970"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fc3",
+            "instruction": "add esp, 24h"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fc6",
+            "instruction": "pop esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fc7",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x817fc8",
+            "instruction": "retn"
+          }
+        ]
+      },
+      "decompilation": {
+        "result": "/* line: 0, address: 0x817f90 */ int __cdecl FrameScript::RegisterFunction(const char *a1, int a2)\n/* line: 1 */ {\n/* line: 2 */     int v2; // esi\n/* line: 3 */ \n/* line: 4, address: 0x817f97 */     v2 = dword_D3F78C;\n/* line: 5, address: 0x817fa1 */     FrameScript::pushcclosure(dword_D3F78C, a2, 0);\n/* line: 6, address: 0x817fab */     FrameScript::PushString(v2, a1);\n/* line: 7, address: 0x817fb3 */     sub_84DCC0(v2, -2);\n/* line: 8, address: 0x817fc6 */     return sub_84E970(v2, -10002);\n/* line: 9 */ }"
+      }
+    },
+    {
+      "address": "0x84dbd0",
+      "name": "FrameScript::GetTop",
+      "size": "0x11",
+      "readScope": "Global reader returns only a typed item; complete bytes not requested.",
+      "assembly": [
+        {
+          "type": "text",
+          "text": "Output validation error: None is not of type 'string'"
+        }
+      ]
+    },
+    {
+      "address": "0x84dbf0",
+      "name": "FrameScript::SetTop",
+      "size": "0x59",
+      "bytes": "558bec8b4d0c85c98b45087c41c1e1048bd18b481003ca39480c7328578d49008b480c8d791089780c8b3d9c13d40089790cc74108000000008b481003ca39480c72dd5f8b481003ca89480c5dc3c1e10483c11001480c5dc3",
+      "readScope": "Complete IDA function range",
+      "assembly": {
+        "name": "FrameScript::SetTop",
+        "start_ea": "0x84dbf0",
+        "return_type": "_DWORD",
+        "arguments": [
+          {
+            "name": "arg0",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg1",
+            "type": "_DWORD"
+          }
+        ],
+        "stack_frame": [
+          {
+            "name": "__saved_registers",
+            "offset": "0x0",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "__return_address",
+            "offset": "0x4",
+            "size": "0x4",
+            "type": "_UNKNOWN *"
+          },
+          {
+            "name": "arg_0",
+            "offset": "0x8",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg_4",
+            "offset": "0xc",
+            "size": "0x4",
+            "type": "_DWORD"
+          }
+        ],
+        "lines": [
+          {
+            "segment": ".text",
+            "address": "0x84dbf0",
+            "instruction": "push ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dbf1",
+            "instruction": "mov ebp, esp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dbf3",
+            "instruction": "mov ecx, [ebp+arg_4]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dbf6",
+            "instruction": "test ecx, ecx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dbf8",
+            "instruction": "mov eax, [ebp+arg_0]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dbfb",
+            "instruction": "jl loc_84DC3E"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dbfd",
+            "instruction": "shl ecx, 4"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc00",
+            "instruction": "mov edx, ecx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc02",
+            "instruction": "mov ecx, [eax+10h]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc05",
+            "instruction": "add ecx, edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc07",
+            "instruction": "cmp [eax+0Ch], ecx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc0a",
+            "instruction": "jnb loc_84DC34"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc0c",
+            "instruction": "push edi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc0d",
+            "instruction": "lea ecx, [ecx+0]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc10",
+            "label": "loc_84DC10",
+            "instruction": "mov ecx, [eax+0Ch]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc13",
+            "instruction": "lea edi, [ecx+10h]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc16",
+            "instruction": "mov [eax+0Ch], edi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc19",
+            "instruction": "mov edi, dword_D4139C"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc1f",
+            "instruction": "mov [ecx+0Ch], edi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc22",
+            "instruction": "mov dword ptr [ecx+8], 0"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc29",
+            "instruction": "mov ecx, [eax+10h]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc2c",
+            "instruction": "add ecx, edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc2e",
+            "instruction": "cmp [eax+0Ch], ecx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc31",
+            "instruction": "jb loc_84DC10"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc33",
+            "instruction": "pop edi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc34",
+            "label": "loc_84DC34",
+            "instruction": "mov ecx, [eax+10h]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc37",
+            "instruction": "add ecx, edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc39",
+            "instruction": "mov [eax+0Ch], ecx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc3c",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc3d",
+            "instruction": "retn"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc3e",
+            "label": "loc_84DC3E",
+            "instruction": "shl ecx, 4"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc41",
+            "instruction": "add ecx, 10h"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc44",
+            "instruction": "add [eax+0Ch], ecx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc47",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dc48",
+            "instruction": "retn"
+          }
+        ]
+      }
+    },
+    {
+      "address": "0x84deb0",
+      "name": "FrameScript::lua_Type",
+      "size": "0x1f",
+      "bytes": "558bec8b450c8b4d08e802fbffff3d786fa400750583c8ff5dc38b40085dc3",
+      "readScope": "Complete IDA function range",
+      "assembly": {
+        "name": "FrameScript::lua_Type",
+        "start_ea": "0x84deb0",
+        "return_type": "int",
+        "arguments": [
+          {
+            "name": "arg0",
+            "type": "int"
+          }
+        ],
+        "stack_frame": [
+          {
+            "name": "__saved_registers",
+            "offset": "0x0",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "__return_address",
+            "offset": "0x4",
+            "size": "0x4",
+            "type": "_UNKNOWN *"
+          },
+          {
+            "name": "arg_0",
+            "offset": "0x8",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg_4",
+            "offset": "0xc",
+            "size": "0x4",
+            "type": "_DWORD"
+          }
+        ],
+        "lines": [
+          {
+            "segment": ".text",
+            "address": "0x84deb0",
+            "instruction": "push ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84deb1",
+            "instruction": "mov ebp, esp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84deb3",
+            "instruction": "mov eax, [ebp+arg_4]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84deb6",
+            "instruction": "mov ecx, [ebp+arg_0]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84deb9",
+            "instruction": "call sub_84D9C0"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84debe",
+            "instruction": "cmp eax, offset unk_A46F78"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dec3",
+            "instruction": "jnz loc_84DECA"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dec5",
+            "instruction": "or eax, 0FFFFFFFFh"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dec8",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dec9",
+            "instruction": "retn"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84deca",
+            "label": "loc_84DECA",
+            "instruction": "mov eax, [eax+8]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84decd",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84dece",
+            "instruction": "retn"
+          }
+        ]
+      },
+      "decompilation": {
+        "result": "/* line: 0, address: 0x84deb0 */ int __cdecl FrameScript::lua_Type(int a1)\n/* line: 1 */ {\n/* line: 2 */     int v1; // eax\n/* line: 3 */ \n/* line: 4, address: 0x84deb9 */     v1 = sub_84D9C0(a1);\n/* line: 5, address: 0x84dec3 */     if ( (_UNKNOWN *)v1 == &unk_A46F78 )\n/* line: 6, address: 0x84dec5 */         return -1;\n/* line: 7 */     else\n/* line: 8, address: 0x84deca */         return *(_DWORD *)(v1 + 8);\n/* line: 9 */ }"
+      }
+    },
+    {
+      "address": "0x84e030",
+      "name": "FrameScript::ToNumber",
+      "size": "0x34",
+      "bytes": "558bec8b450c8b4d0883ec10e87ff9ffff8378080374178d4df05150e8ff8d000083c40885c07506d9ee8be55dc3dd008be55dc3",
+      "readScope": "Complete IDA function range",
+      "assembly": {
+        "name": "FrameScript::ToNumber",
+        "start_ea": "0x84e030",
+        "return_type": "double",
+        "arguments": [
+          {
+            "name": "arg0",
+            "type": "int"
+          }
+        ],
+        "stack_frame": [
+          {
+            "name": "var_10",
+            "offset": "0x0",
+            "size": "0x10",
+            "type": "_BYTE[16]"
+          },
+          {
+            "name": "__saved_registers",
+            "offset": "0x10",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "__return_address",
+            "offset": "0x14",
+            "size": "0x4",
+            "type": "_UNKNOWN *"
+          },
+          {
+            "name": "arg_0",
+            "offset": "0x18",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg_4",
+            "offset": "0x1c",
+            "size": "0x4",
+            "type": "_DWORD"
+          }
+        ],
+        "lines": [
+          {
+            "segment": ".text",
+            "address": "0x84e030",
+            "instruction": "push ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e031",
+            "instruction": "mov ebp, esp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e033",
+            "instruction": "mov eax, [ebp+arg_4]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e036",
+            "instruction": "mov ecx, [ebp+arg_0]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e039",
+            "instruction": "sub esp, 10h"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e03c",
+            "instruction": "call sub_84D9C0"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e041",
+            "instruction": "cmp dword ptr [eax+8], 3"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e045",
+            "instruction": "jz loc_84E05E"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e047",
+            "instruction": "lea ecx, [ebp+var_10]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e04a",
+            "instruction": "push ecx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e04b",
+            "instruction": "push eax"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e04c",
+            "instruction": "call sub_856E50"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e051",
+            "instruction": "add esp, 8"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e054",
+            "instruction": "test eax, eax"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e056",
+            "instruction": "jnz loc_84E05E"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e058",
+            "instruction": "fldz"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e05a",
+            "instruction": "mov esp, ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e05c",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e05d",
+            "instruction": "retn"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e05e",
+            "label": "loc_84E05E",
+            "instruction": "fld , qword ptr [eax]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e060",
+            "instruction": "mov esp, ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e062",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e063",
+            "instruction": "retn"
+          }
+        ]
+      },
+      "decompilation": {
+        "result": "/* line: 0, address: 0x84e030 */ double __cdecl FrameScript::ToNumber(int a1)\n/* line: 1 */ {\n/* line: 2 */     _DWORD *v1; // eax\n/* line: 3 */     _BYTE v3[16]; // [esp+0h] [ebp-10h] BYREF\n/* line: 4 */ \n/* line: 5, address: 0x84e03c */     v1 = (_DWORD *)sub_84D9C0(a1);\n/* line: 6, address: 0x84e045 */     if ( v1[2] == 3 )\n/* line: 7, address: 0x84e045 */         return *(double *)v1;\n/* line: 8, address: 0x84e04c */     v1 = (_DWORD *)sub_856E50(v1, v3);\n/* line: 9, address: 0x84e056 */     if ( v1 )\n/* line: 10, address: 0x84e05e */         return *(double *)v1;\n/* line: 11 */     else\n/* line: 12, address: 0x84e058 */         return 0.0;\n/* line: 13 */ }"
+      }
+    },
+    {
+      "address": "0x84e0b0",
+      "name": "FrameScript::toboolean",
+      "size": "0x2a",
+      "bytes": "558bec8b450c8b4d08e802f9ffff8b480885c9741183f90175058338007407b8010000005dc333c05dc3",
+      "readScope": "Complete IDA function range",
+      "assembly": {
+        "name": "FrameScript::toboolean",
+        "start_ea": "0x84e0b0",
+        "return_type": "_DWORD",
+        "arguments": [
+          {
+            "name": "arg0",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg1",
+            "type": "_DWORD"
+          }
+        ],
+        "stack_frame": [
+          {
+            "name": "__saved_registers",
+            "offset": "0x0",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "__return_address",
+            "offset": "0x4",
+            "size": "0x4",
+            "type": "_UNKNOWN *"
+          },
+          {
+            "name": "arg_0",
+            "offset": "0x8",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg_4",
+            "offset": "0xc",
+            "size": "0x4",
+            "type": "_DWORD"
+          }
+        ],
+        "lines": [
+          {
+            "segment": ".text",
+            "address": "0x84e0b0",
+            "instruction": "push ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0b1",
+            "instruction": "mov ebp, esp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0b3",
+            "instruction": "mov eax, [ebp+arg_4]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0b6",
+            "instruction": "mov ecx, [ebp+arg_0]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0b9",
+            "instruction": "call sub_84D9C0"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0be",
+            "instruction": "mov ecx, [eax+8]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0c1",
+            "instruction": "test ecx, ecx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0c3",
+            "instruction": "jz loc_84E0D6"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0c5",
+            "instruction": "cmp ecx, 1"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0c8",
+            "instruction": "jnz loc_84E0CF"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0ca",
+            "instruction": "cmp dword ptr [eax], 0"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0cd",
+            "instruction": "jz loc_84E0D6"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0cf",
+            "label": "loc_84E0CF",
+            "instruction": "mov eax, 1"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0d4",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0d5",
+            "instruction": "retn"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0d6",
+            "label": "loc_84E0D6",
+            "instruction": "xor eax, eax"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0d8",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0d9",
+            "instruction": "retn"
+          }
+        ]
+      }
+    },
+    {
+      "address": "0x84e0e0",
+      "name": "FrameScript::ToLString",
+      "size": "0x6f",
+      "bytes": "558bec568b7508578b7d0c8bc78bcee8ccf8ffff83780804743e5056e89f8d000083c40885c075138b451085c07406c700000000005f33c05e5dc38b46148b48443b4840720956e824d8000083c4048bc78bcee888f8ffff8b4d1085c974078b108b521089118b005f83c0145e5dc3",
+      "readScope": "Complete IDA function range",
+      "assembly": {
+        "name": "FrameScript::ToLString",
+        "start_ea": "0x84e0e0",
+        "return_type": "_DWORD",
+        "arguments": [
+          {
+            "name": "arg0",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg1",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg2",
+            "type": "_DWORD"
+          }
+        ],
+        "stack_frame": [
+          {
+            "name": "__saved_registers",
+            "offset": "0x8",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "__return_address",
+            "offset": "0xc",
+            "size": "0x4",
+            "type": "_UNKNOWN *"
+          },
+          {
+            "name": "arg_0",
+            "offset": "0x10",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg_4",
+            "offset": "0x14",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg_8",
+            "offset": "0x18",
+            "size": "0x4",
+            "type": "_DWORD"
+          }
+        ],
+        "lines": [
+          {
+            "segment": ".text",
+            "address": "0x84e0e0",
+            "instruction": "push ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0e1",
+            "instruction": "mov ebp, esp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0e3",
+            "instruction": "push esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0e4",
+            "instruction": "mov esi, [ebp+arg_0]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0e7",
+            "instruction": "push edi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0e8",
+            "instruction": "mov edi, [ebp+arg_4]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0eb",
+            "instruction": "mov eax, edi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0ed",
+            "instruction": "mov ecx, esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0ef",
+            "instruction": "call sub_84D9C0"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0f4",
+            "instruction": "cmp dword ptr [eax+8], 4"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0f8",
+            "instruction": "jz loc_84E138"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0fa",
+            "instruction": "push eax"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0fb",
+            "instruction": "push esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e0fc",
+            "instruction": "call sub_856EA0"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e101",
+            "instruction": "add esp, 8"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e104",
+            "instruction": "test eax, eax"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e106",
+            "instruction": "jnz loc_84E11B"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e108",
+            "instruction": "mov eax, [ebp+arg_8]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e10b",
+            "instruction": "test eax, eax"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e10d",
+            "instruction": "jz loc_84E115"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e10f",
+            "instruction": "mov dword ptr [eax], 0"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e115",
+            "label": "loc_84E115",
+            "instruction": "pop edi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e116",
+            "instruction": "xor eax, eax"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e118",
+            "instruction": "pop esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e119",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e11a",
+            "instruction": "retn"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e11b",
+            "label": "loc_84E11B",
+            "instruction": "mov eax, [esi+14h]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e11e",
+            "instruction": "mov ecx, [eax+44h]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e121",
+            "instruction": "cmp ecx, [eax+40h]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e124",
+            "instruction": "jb loc_84E12F"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e126",
+            "instruction": "push esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e127",
+            "instruction": "call sub_85B950"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e12c",
+            "instruction": "add esp, 4"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e12f",
+            "label": "loc_84E12F",
+            "instruction": "mov eax, edi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e131",
+            "instruction": "mov ecx, esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e133",
+            "instruction": "call sub_84D9C0"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e138",
+            "label": "loc_84E138",
+            "instruction": "mov ecx, [ebp+arg_8]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e13b",
+            "instruction": "test ecx, ecx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e13d",
+            "instruction": "jz loc_84E146"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e13f",
+            "instruction": "mov edx, [eax]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e141",
+            "instruction": "mov edx, [edx+10h]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e144",
+            "instruction": "mov [ecx], edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e146",
+            "label": "loc_84E146",
+            "instruction": "mov eax, [eax]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e148",
+            "instruction": "pop edi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e149",
+            "instruction": "add eax, 14h"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e14c",
+            "instruction": "pop esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e14d",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e14e",
+            "instruction": "retn"
+          }
+        ]
+      }
+    },
+    {
+      "address": "0x84e2a0",
+      "name": "FrameScript::PushNumber",
+      "size": "0x24",
+      "bytes": "558bec8b4d08dd450c8b410c8b159c13d400dd1889500cc740080300000083410c105dc3",
+      "readScope": "Complete IDA function range",
+      "assembly": {
+        "name": "FrameScript::PushNumber",
+        "start_ea": "0x84e2a0",
+        "return_type": "int",
+        "arguments": [
+          {
+            "name": "arg0",
+            "type": "int"
+          },
+          {
+            "name": "arg1",
+            "type": "double"
+          }
+        ],
+        "stack_frame": [
+          {
+            "name": "__saved_registers",
+            "offset": "0x0",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "__return_address",
+            "offset": "0x4",
+            "size": "0x4",
+            "type": "_UNKNOWN *"
+          },
+          {
+            "name": "arg_0",
+            "offset": "0x8",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg_4",
+            "offset": "0xc",
+            "size": "0x8",
+            "type": "double"
+          }
+        ],
+        "lines": [
+          {
+            "segment": ".text",
+            "address": "0x84e2a0",
+            "instruction": "push ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e2a1",
+            "instruction": "mov ebp, esp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e2a3",
+            "instruction": "mov ecx, [ebp+arg_0]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e2a6",
+            "instruction": "fld , [ebp+arg_4]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e2a9",
+            "instruction": "mov eax, [ecx+0Ch]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e2ac",
+            "instruction": "mov edx, dword_D4139C"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e2b2",
+            "instruction": "fstp , qword ptr [eax]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e2b4",
+            "instruction": "mov [eax+0Ch], edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e2b7",
+            "instruction": "mov dword ptr [eax+8], 3"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e2be",
+            "instruction": "add dword ptr [ecx+0Ch], 10h"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e2c2",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e2c3",
+            "instruction": "retn"
+          }
+        ]
+      },
+      "decompilation": {
+        "result": "/* line: 0, address: 0x84e2a0 */ int __cdecl FrameScript::PushNumber(int a1, double a2)\n/* line: 1 */ {\n/* line: 2 */     int result; // eax\n/* line: 3 */     int v3; // edx\n/* line: 4 */ \n/* line: 5, address: 0x84e2a9 */     result = *(_DWORD *)(a1 + 12);\n/* line: 6, address: 0x84e2ac */     v3 = dword_D4139C;\n/* line: 7, address: 0x84e2b2 */     *(double *)result = a2;\n/* line: 8, address: 0x84e2b4 */     *(_DWORD *)(result + 12) = v3;\n/* line: 9, address: 0x84e2b7 */     *(_DWORD *)(result + 8) = 3;\n/* line: 10, address: 0x84e2be */     *(_DWORD *)(a1 + 12) += 16;\n/* line: 11, address: 0x84e2c2 */     return result;\n/* line: 12 */ }"
+      }
+    },
+    {
+      "address": "0x84e350",
+      "name": "FrameScript::PushString",
+      "size": "0x4c",
+      "bytes": "558bec8b550c85d2751c8b45088b480c8b159c13d40089510cc741080000000083400c105dc38bc2568d70018d6424008a0883c00184c975f72bc6508b45085250e86affffff83c40c5e5dc3",
+      "readScope": "Complete IDA function range",
+      "assembly": {
+        "name": "FrameScript::PushString",
+        "start_ea": "0x84e350",
+        "return_type": "int",
+        "arguments": [
+          {
+            "name": "arg0",
+            "type": "int"
+          },
+          {
+            "name": "arg1",
+            "type": "const char *"
+          }
+        ],
+        "stack_frame": [
+          {
+            "name": "__saved_registers",
+            "offset": "0x0",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "__return_address",
+            "offset": "0x4",
+            "size": "0x4",
+            "type": "_UNKNOWN *"
+          },
+          {
+            "name": "arg_0",
+            "offset": "0x8",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg_4",
+            "offset": "0xc",
+            "size": "0x4",
+            "type": "_DWORD"
+          }
+        ],
+        "lines": [
+          {
+            "segment": ".text",
+            "address": "0x84e350",
+            "instruction": "push ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e351",
+            "instruction": "mov ebp, esp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e353",
+            "instruction": "mov edx, [ebp+arg_4]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e356",
+            "instruction": "test edx, edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e358",
+            "instruction": "jnz loc_84E376"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e35a",
+            "instruction": "mov eax, [ebp+arg_0]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e35d",
+            "instruction": "mov ecx, [eax+0Ch]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e360",
+            "instruction": "mov edx, dword_D4139C"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e366",
+            "instruction": "mov [ecx+0Ch], edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e369",
+            "instruction": "mov dword ptr [ecx+8], 0"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e370",
+            "instruction": "add dword ptr [eax+0Ch], 10h"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e374",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e375",
+            "instruction": "retn"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e376",
+            "label": "loc_84E376",
+            "instruction": "mov eax, edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e378",
+            "instruction": "push esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e379",
+            "instruction": "lea esi, [eax+1]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e37c",
+            "instruction": "lea esp, [esp+0]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e380",
+            "label": "loc_84E380",
+            "instruction": "mov cl, [eax]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e382",
+            "instruction": "add eax, 1"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e385",
+            "instruction": "test cl, cl"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e387",
+            "instruction": "jnz loc_84E380"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e389",
+            "instruction": "sub eax, esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e38b",
+            "instruction": "push eax"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e38c",
+            "instruction": "mov eax, [ebp+arg_0]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e38f",
+            "instruction": "push edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e390",
+            "instruction": "push eax"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e391",
+            "instruction": "call FrameScript__PushFString"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e396",
+            "instruction": "add esp, 0Ch"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e399",
+            "instruction": "pop esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e39a",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e39b",
+            "instruction": "retn"
+          }
+        ]
+      },
+      "decompilation": {
+        "result": "/* line: 0, address: 0x84e350 */ int __cdecl FrameScript::PushString(int a1, const char *a2)\n/* line: 1 */ {\n/* line: 2 */     int v3; // ecx\n/* line: 3 */ \n/* line: 4, address: 0x84e358 */     if ( a2 )\n/* line: 5, address: 0x84e391 */         return FrameScript::PushFString(a1, a2, strlen(a2));\n/* line: 6, address: 0x84e35d */     v3 = *(_DWORD *)(a1 + 12);\n/* line: 7, address: 0x84e366 */     *(_DWORD *)(v3 + 12) = dword_D4139C;\n/* line: 8, address: 0x84e369 */     *(_DWORD *)(v3 + 8) = 0;\n/* line: 9, address: 0x84e370 */     *(_DWORD *)(a1 + 12) += 16;\n/* line: 10, address: 0x84e374 */     return a1;\n/* line: 11 */ }"
+      }
+    },
+    {
+      "address": "0x84e4d0",
+      "name": "FrameScript::pushboolean",
+      "size": "0x29",
+      "bytes": "558bec8b159c13d4008b4d088b410c89500c33d239550cc74008010000000f95c2891083410c105dc3",
+      "readScope": "Complete IDA function range",
+      "assembly": {
+        "name": "FrameScript::pushboolean",
+        "start_ea": "0x84e4d0",
+        "return_type": "_DWORD",
+        "arguments": [
+          {
+            "name": "arg0",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg1",
+            "type": "_DWORD"
+          }
+        ],
+        "stack_frame": [
+          {
+            "name": "__saved_registers",
+            "offset": "0x0",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "__return_address",
+            "offset": "0x4",
+            "size": "0x4",
+            "type": "_UNKNOWN *"
+          },
+          {
+            "name": "arg_0",
+            "offset": "0x8",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg_4",
+            "offset": "0xc",
+            "size": "0x4",
+            "type": "_DWORD"
+          }
+        ],
+        "lines": [
+          {
+            "segment": ".text",
+            "address": "0x84e4d0",
+            "instruction": "push ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e4d1",
+            "instruction": "mov ebp, esp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e4d3",
+            "instruction": "mov edx, dword_D4139C"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e4d9",
+            "instruction": "mov ecx, [ebp+arg_0]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e4dc",
+            "instruction": "mov eax, [ecx+0Ch]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e4df",
+            "instruction": "mov [eax+0Ch], edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e4e2",
+            "instruction": "xor edx, edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e4e4",
+            "instruction": "cmp [ebp+arg_4], edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e4e7",
+            "instruction": "mov dword ptr [eax+8], 1"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e4ee",
+            "instruction": "setnz dl"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e4f1",
+            "instruction": "mov [eax], edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e4f3",
+            "instruction": "add dword ptr [ecx+0Ch], 10h"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e4f7",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e4f8",
+            "instruction": "retn"
+          }
+        ]
+      }
+    },
+    {
+      "address": "0x84e590",
+      "name": "FrameScript::FindTable",
+      "size": "0x62",
+      "bytes": "558bec83ec108b450c53568b7508578bcee81af4ffff8b55108bf8a19c13d4008945fc8bc28d58018a0883c00184c975f72bc3505256e8b58600008b4e0c518d55f05257568945f0c745f804000000e86c8c000083c41c83460c105f5e5b8be55dc3",
+      "readScope": "Complete IDA function range",
+      "assembly": {
+        "name": "FrameScript::FindTable",
+        "start_ea": "0x84e590",
+        "return_type": "int",
+        "arguments": [
+          {
+            "name": "arg0",
+            "type": "int"
+          },
+          {
+            "name": "arg1",
+            "type": "int"
+          },
+          {
+            "name": "arg2",
+            "type": "const char *"
+          }
+        ],
+        "stack_frame": [
+          {
+            "name": "var_10",
+            "offset": "0xc",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "var_8",
+            "offset": "0x14",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "var_4",
+            "offset": "0x18",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "__saved_registers",
+            "offset": "0x1c",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "__return_address",
+            "offset": "0x20",
+            "size": "0x4",
+            "type": "_UNKNOWN *"
+          },
+          {
+            "name": "arg_0",
+            "offset": "0x24",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg_4",
+            "offset": "0x28",
+            "size": "0x4",
+            "type": "_DWORD"
+          },
+          {
+            "name": "arg_8",
+            "offset": "0x2c",
+            "size": "0x4",
+            "type": "_DWORD"
+          }
+        ],
+        "lines": [
+          {
+            "segment": ".text",
+            "address": "0x84e590",
+            "instruction": "push ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e591",
+            "instruction": "mov ebp, esp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e593",
+            "instruction": "sub esp, 10h"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e596",
+            "instruction": "mov eax, [ebp+arg_4]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e599",
+            "instruction": "push ebx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e59a",
+            "instruction": "push esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e59b",
+            "instruction": "mov esi, [ebp+arg_0]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e59e",
+            "instruction": "push edi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e59f",
+            "instruction": "mov ecx, esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5a1",
+            "instruction": "call sub_84D9C0"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5a6",
+            "instruction": "mov edx, [ebp+arg_8]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5a9",
+            "instruction": "mov edi, eax"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5ab",
+            "instruction": "mov eax, dword_D4139C"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5b0",
+            "instruction": "mov [ebp+var_4], eax"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5b3",
+            "instruction": "mov eax, edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5b5",
+            "instruction": "lea ebx, [eax+1]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5b8",
+            "label": "loc_84E5B8",
+            "instruction": "mov cl, [eax]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5ba",
+            "instruction": "add eax, 1"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5bd",
+            "instruction": "test cl, cl"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5bf",
+            "instruction": "jnz loc_84E5B8"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5c1",
+            "instruction": "sub eax, ebx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5c3",
+            "instruction": "push eax"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5c4",
+            "instruction": "push edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5c5",
+            "instruction": "push esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5c6",
+            "instruction": "call sub_856C80"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5cb",
+            "instruction": "mov ecx, [esi+0Ch]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5ce",
+            "instruction": "push ecx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5cf",
+            "instruction": "lea edx, [ebp+var_10]"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5d2",
+            "instruction": "push edx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5d3",
+            "instruction": "push edi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5d4",
+            "instruction": "push esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5d5",
+            "instruction": "mov [ebp+var_10], eax"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5d8",
+            "instruction": "mov [ebp+var_8], 4"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5df",
+            "instruction": "call sub_857250"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5e4",
+            "instruction": "add esp, 1Ch"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5e7",
+            "instruction": "add dword ptr [esi+0Ch], 10h"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5eb",
+            "instruction": "pop edi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5ec",
+            "instruction": "pop esi"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5ed",
+            "instruction": "pop ebx"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5ee",
+            "instruction": "mov esp, ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5f0",
+            "instruction": "pop ebp"
+          },
+          {
+            "segment": ".text",
+            "address": "0x84e5f1",
+            "instruction": "retn"
+          }
+        ]
+      },
+      "decompilation": {
+        "result": "/* line: 0, address: 0x84e590 */ int __cdecl FrameScript::FindTable(int a1, int a2, const char *a3)\n/* line: 1 */ {\n/* line: 2 */     int v3; // edi\n/* line: 3 */     int v4; // eax\n/* line: 4 */     int result; // eax\n/* line: 5 */     int v6; // [esp-10h] [ebp-2Ch]\n/* line: 6 */     _DWORD v7[4]; // [esp+Ch] [ebp-10h] BYREF\n/* line: 7 */ \n/* line: 8, address: 0x84e5a9 */     v3 = sub_84D9C0(a1);\n/* line: 9, address: 0x84e5b0 */     v7[3] = dword_D4139C;\n/* line: 10, address: 0x84e5c6 */     v4 = sub_856C80(a1, a3, strlen(a3));\n/* line: 11, address: 0x84e5ce */     v6 = *(_DWORD *)(a1 + 12);\n/* line: 12, address: 0x84e5d5 */     v7[0] = v4;\n/* line: 13, address: 0x84e5d8 */     v7[2] = 4;\n/* line: 14, address: 0x84e5df */     result = sub_857250(a1, v3, v7, v6);\n/* line: 15, address: 0x84e5e7 */     *(_DWORD *)(a1 + 12) += 16;\n/* line: 16, address: 0x84e5eb */     return result;\n/* line: 17 */ }"
+      }
+    }
+  ]
+}
