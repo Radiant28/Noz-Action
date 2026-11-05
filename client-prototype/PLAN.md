@@ -1,4 +1,4 @@
-# Nozdor Action 0.3.19
+# Nozdor Action 0.3.20
 
 - [x] Preview game objects separately from unit hard targets; refresh native hover highlight for players/NPCs/mail/ore and clear only the hover channel.
 
@@ -6,7 +6,7 @@
 
 - [x] Keep free RMB cursor + LMB interaction in both soft and automatic targeting modes.
 
-- [x] Soft hover without hard-target changes; LMB selects only, native mouseover/class colors, addon setting and protocol 11.
+- [x] Soft hover without hard-target changes; LMB selects only, native mouseover/class colors, addon setting and protocol 12.
 - [ ] Confirm soft hover, click selection and UI/Cell behavior inside WoW.
 
 Scope: extend the working 0.2.2 client-only DLL and addon. Keep source, build output and release packaging under client-prototype. Preserve the original EXE and existing SavedVariables.

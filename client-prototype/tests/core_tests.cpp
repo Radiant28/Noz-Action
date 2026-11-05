@@ -9,6 +9,7 @@ int main(int argc, char** argv) {
     assert(action::HoverGuid(2, 42, 42, 0x19) == 42); // Player or NPC.
     assert(action::HoverGuid(2, 42, 0, 0x19) == 0); // Rejected unit stays rejected.
     assert(action::HoverGuid(3, 43, 0, 0x21) == 43); // Mailbox / ore game object.
+    assert(action::HoverGuid(2, 43, 0, 0x21) == 43); // Dynamic models also return kind 2 for game objects.
     assert(action::HoverGuid(3, 43, 0, 0x19) == 0);
     assert(action::HoverGuid(1, 43, 0, 0x21) == 0);
     assert(action::HoverGuid(0, 0, 0, 0) == 0);

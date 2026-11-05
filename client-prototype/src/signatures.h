@@ -85,4 +85,8 @@ inline constexpr CodeGuard kCodeGuards[] = {
     {0x84E1C0u, 42u, 0x4114C93Au},
     {0x98F790u, 2105u, 0x98838556u},
     {0x98E9F0u, 1075u, 0xEBAAED0Au},
+    {0x7251C0u, 798u, 0x78237D66u},
+    {0x60FEC0u, 380u, 0x4BF845B7u},
+    {0x60D280u, 168u, 0xF733D65Au},
+    {0x4F9930u, 1124u, 0x790D249Bu},
 };

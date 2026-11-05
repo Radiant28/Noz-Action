@@ -1,0 +1,24 @@
+--- a/Interface/AddOns/!!RefinedBlizzPlates/Functions.lua
++++ b/Interface/AddOns/!!RefinedBlizzPlates/Functions.lua
+@@ -1642,7 +1642,8 @@
+ 	Virtual.RBP_classColor = nil
+ 	if class then
+ 		if class == "FRIENDLY_PLAYER" then
+-			local friendClass = ClassByFriendName[Virtual.RBP_nameString]
++			local friendClass = NozdorAction and NozdorAction.GetNameplateClass and NozdorAction.GetNameplateClass(Virtual.RealPlate)
++			friendClass = friendClass or ClassByFriendName[Virtual.RBP_nameString]
+ 			if friendClass then
+ 				Virtual.RBP_classColor = RAID_CLASS_COLORS[friendClass]
+ 				if dbp.healthBar_friendClassColor then
+@@ -2386,6 +2387,11 @@
+ 				UpdateClickboxOutOfCombat(Virtual)
+ 			end
+ 		end
++		if Virtual.RBP_classKey == "FRIENDLY_PLAYER" and NozdorAction and NozdorAction.GetNameplateClass then
++			local previous = Virtual.RBP_classColor
++			UpdateClassColor(Virtual)
++			if Virtual.RBP_isBarlessPlate and previous ~= Virtual.RBP_classColor then UpdateBarlessPlate(Virtual) end
++		end
+ 		if Virtual.RBP_lowHpColoring or Virtual.RBP_aggroColoring then
+ 			UpdateHealthBarColor(Virtual)
+ 		end

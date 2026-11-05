@@ -218,7 +218,7 @@ assert(NozdorActionSettingsScroll.scrollChild == NozdorActionSettingsContent)
 assert(#UISpecialFrames == 0, "Settings belong to standard options, not a floating dialog")
 assert(not NozdorActionCrosshair:IsShown())
 local native = {active = false, reason = "disabled", config = {}, interactions = 0,
-    diagnostic = "Target probe: terrain under crosshair; kind=1", protocol = 11}
+    diagnostic = "Target probe: terrain under crosshair; kind=1", protocol = 12}
 function NozdorActionNative(command, ...)
     if command == "cursorui" then
         assert(select("#", ...) == 4)
@@ -227,7 +227,7 @@ function NozdorActionNative(command, ...)
         assert(type(native.aimPlate) == "string" and type(native.cursorPlate) == "string")
         return true
     elseif command == "status" then
-        return native.protocol, "0.3.18", native.active, environment.pickedGuid or "0x000000000000000B",
+        return native.protocol, "0.3.20", native.active, environment.pickedGuid or "0x000000000000000B",
             native.reason, 10, native.config[5], native.diagnostic, environment.cursorHeld
     elseif command == "interactcursor" then
         assert(select("#", ...) == 0)
@@ -238,13 +238,17 @@ function NozdorActionNative(command, ...)
         local plate = ...
         assert(select("#", ...) == 1 and type(plate) == "table")
         return rawget(plate, "nativeGuid") or ""
+    elseif command == "unitinfo" then
+        assert(select("#", ...) == 1 and type((...)) == "string")
+        local info = environment.nativeInfo
+        return info and info.classId or 0, info and info.reaction or 0, info and not not info.dead or false
     elseif command == "interact" then
         assert(select("#", ...) == 0, "One shared interaction action")
         native.interactions = native.interactions + 1
         return true
     end
     assert(command == "configure")
-    assert(select("#", ...) == 29, "Protocol 11 requires 29 configure values")
+    assert(select("#", ...) == 29, "Protocol 12 requires 29 configure values")
     native.config = {...}
     native.active = native.config[1]
     native.reason = native.active and "active" or "disabled"
@@ -351,6 +355,18 @@ local function ReticleColor(r, g, b)
         Near(texture.color[1], r); Near(texture.color[2], g); Near(texture.color[3], b)
     end
 end
+environment.noHover = true
+environment.nativeInfo = {classId = 2, reaction = 5}
+ReticleColor(0.96, 0.55, 0.73)
+local classPlate = Region(nil, WorldFrame)
+classPlate.nativeGuid = "0x000000000000000B"
+assert(NozdorAction.GetNameplateClass(classPlate) == "PALADIN", "Exact native plate class without target or mouseover")
+assert(not NozdorAction.GetNameplateClass(Region(nil, WorldFrame)), "Unrelated UI has no class")
+environment.nativeInfo = {classId = 0, reaction = 2}; ReticleColor(1, 0.2, 0.2)
+environment.nativeInfo = {classId = 0, reaction = 4}; ReticleColor(1, 0.85, 0.1)
+environment.nativeInfo = {classId = 0, reaction = 5}; ReticleColor(0.25, 1, 0.35)
+environment.nativeInfo = {classId = 2, reaction = 5, dead = true}; ReticleColor(0.55, 0.55, 0.55)
+environment.nativeInfo, environment.noHover = nil, nil
 assert(NozdorActionCrosshair.textures[1].texture == "Interface\\AddOns\\NozdorAction\\Reticles")
 ReticleColor(0.25, 1, 0.35)
 environment.pickedGuid = "0x000000000000000C"; ReticleColor(1, 1, 1)
@@ -789,7 +805,7 @@ local messages = {}
 DEFAULT_CHAT_FRAME.AddMessage = function(self, message) messages[#messages + 1] = message end
 environment.focus = true; Update()
 SlashCmdList.NOZDORACTION("status")
-assert(not native.config[1] and messages[1]:find("0.3.18", 1, true))
+assert(not native.config[1] and messages[1]:find("0.3.20", 1, true))
 if TEST_LOCALE == "ruRU" then
     assert(BINDING_NAME_NOZDORACTION_SETTINGS == "Открыть настройки")
     assert(BINDING_NAME_NOZDORACTION_CURSOR == "Свободный курсор")
@@ -812,7 +828,7 @@ NozdorActionDB.range = 301; Event("ADDON_LOADED")
 assert(NozdorActionDB.range == 40 and native.config[3] == 40, "Reject saved range beyond limit")
 native.protocol = 8; Update()
 assert(not NozdorActionCrosshair:IsShown(), "Reject old native protocol")
-native.protocol = 11; Update()
+native.protocol = 12; Update()
 NozdorActionNative = nil; Update()
 assert(not NozdorActionCrosshair:IsShown(), "Missing DLL hides reticle")
-print("PASS: protocol11; camera profiles; atlas reticles; dialog close; cursor bindings; target retention; UI gates")
+print("PASS: protocol12; camera profiles; atlas reticles; dialog close; cursor bindings; target retention; UI gates")

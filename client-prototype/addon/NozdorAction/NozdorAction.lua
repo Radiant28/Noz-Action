@@ -82,6 +82,24 @@ local reticle = crosshair:CreateTexture(nil, "OVERLAY")
 reticle:SetAllPoints(crosshair)
 reticle:SetTexture("Interface\\AddOns\\NozdorAction\\Reticles")
 
+local classTokens = {[1] = "WARRIOR", [2] = "PALADIN", [3] = "HUNTER", [4] = "ROGUE", [5] = "PRIEST",
+    [6] = "DEATHKNIGHT", [7] = "SHAMAN", [8] = "MAGE", [9] = "WARLOCK", [11] = "DRUID"}
+local function NativeUnitInfo(guid)
+    if not guid or guid == "" or type(NozdorActionNative) ~= "function" then return end
+    local ok, classId, reaction, dead = pcall(NozdorActionNative, "unitinfo", guid)
+    if ok and type(classId) == "number" and type(reaction) == "number" and reaction >= 1 and reaction <= 8 and
+        type(dead) == "boolean" then return classTokens[classId], reaction, dead end
+end
+
+function A.GetNameplateClass(frame)
+    if type(NozdorActionNative) ~= "function" then return end
+    while frame and frame ~= WorldFrame and frame ~= UIParent do
+        local ok, guid = pcall(NozdorActionNative, "plateguid", frame)
+        if ok and type(guid) == "string" and guid ~= "" then return (NativeUnitInfo(guid)) end
+        frame = FrameParent(frame)
+    end
+end
+
 local labels = {
     ["hover hook unavailable"] = L["Hover input is unavailable"],
     ["right mouse unavailable"] = L["RMB input is unavailable"],
@@ -276,24 +294,29 @@ local function UpdateReticle()
     if shapeLabel then shapeLabel:SetText(L[shapeNames[db.style]]) end
     local r, g, b = 1, 1, 1
     local unit = "target"
+    local class, reaction, dead, friendly, attackable
     if db.softTarget and nativeActive and db.autoTarget then
-        local hover = UnitGUID("mouseover")
-        unit = hover and softPicked ~= "" and string.lower(hover) == string.lower(softPicked) and "mouseover" or nil
-    end
-    if db.targetColor and unit and UnitExists(unit) then
-        local classColor
-        if UnitIsPlayer(unit) then
-            local _, class = UnitClass(unit)
-            classColor = (CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[class]) or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[class])
+        class, reaction, dead = NativeUnitInfo(softPicked)
+        unit = nil
+        if not reaction then
+            local hover = UnitGUID("mouseover")
+            unit = hover and softPicked ~= "" and string.lower(hover) == string.lower(softPicked) and "mouseover" or nil
         end
-        if UnitIsDeadOrGhost(unit) then r, g, b = 0.55, 0.55, 0.55
+    end
+    if unit and UnitExists(unit) then
+        if UnitIsPlayer(unit) then local _, unitClass = UnitClass(unit); class = unitClass end
+        reaction, dead = UnitReaction(unit, "player"), UnitIsDeadOrGhost(unit)
+        friendly, attackable = UnitIsFriend("player", unit), UnitCanAttack("player", unit)
+    end
+    if db.targetColor then
+        local classColor = class and ((CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[class]) or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]))
+        if dead then r, g, b = 0.55, 0.55, 0.55
         elseif classColor then r, g, b = classColor.r, classColor.g, classColor.b
         else
-            local reaction = UnitReaction(unit, "player")
             if reaction and reaction <= 3 then r, g, b = 1, 0.2, 0.2
             elseif reaction == 4 then r, g, b = 1, 0.85, 0.1
-            elseif (reaction and reaction >= 5) or UnitIsFriend("player", unit) then r, g, b = 0.25, 1, 0.35
-            elseif UnitCanAttack("player", unit) then r, g, b = 1, 0.2, 0.2 end
+            elseif (reaction and reaction >= 5) or friendly then r, g, b = 0.25, 1, 0.35
+            elseif attackable then r, g, b = 1, 0.2, 0.2 end
         end
     end
     reticle:SetVertexColor(r, g, b)
@@ -321,7 +344,7 @@ local function Sync()
         return
     end
     local ok, protocol, version, active, picked, reason, frames, shifted, diagnostic, held = pcall(native, "status")
-    if not ok or protocol ~= 11 then
+    if not ok or protocol ~= 12 then
         nativeActive, cameraApplied = false, false
         stateText = L["Update DLL and addon to compatible versions"]
         UpdateReticle()
@@ -435,7 +458,7 @@ local function CreateSettings()
     settings.name = "Nozdor Action"
     settings:Hide()
     local title = settings:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.19")
+    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.20")
     local scroll = CreateFrame("ScrollFrame", "NozdorActionSettingsScroll", settings, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", settings, "TOPLEFT", 0, -45)
     scroll:SetPoint("BOTTOMRIGHT", settings, "BOTTOMRIGHT", -30, 8)

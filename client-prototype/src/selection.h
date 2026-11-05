@@ -17,8 +17,9 @@ struct Decision {
 };
 
 inline std::uint64_t HoverGuid(int kind, std::uint64_t raw, std::uint64_t unit, unsigned objectMask) {
-    if (kind == 2) return unit;
-    return kind == 3 && (objectMask & 0x20) ? raw : 0;
+    if (kind < 2) return 0;
+    if (objectMask & 8) return unit;
+    return (objectMask & 0x20) ? raw : 0;
 }
 
 template<class Lookup, class Change>

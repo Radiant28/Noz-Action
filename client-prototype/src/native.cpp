@@ -35,6 +35,7 @@ using GetPlayer = Guid (__cdecl*)();
 using Resolve = void* (__cdecl*)(Guid, unsigned, const char*, unsigned);
 using UnitTest = bool (__attribute__((thiscall))*)(void*);
 using UnitRelation = bool (__attribute__((thiscall))*)(void*, void*);
+using UnitReaction = int (__attribute__((thiscall))*)(void*, void*);
 using SetTarget = void (__cdecl*)(Guid);
 using TrackObject = int (__attribute__((thiscall))*)(void*, Guid);
 using HoverChange = void* (__cdecl*)(const Guid*);
@@ -65,7 +66,7 @@ template<class T> T& Field(void* object, std::size_t offset) {
 }
 
 constexpr char kApiName[] = "NozdorActionNative";
-constexpr char kVersion[] = "0.3.18";
+constexpr char kVersion[] = "0.3.20";
 HANDLE g_log = INVALID_HANDLE_VALUE;
 bool g_enabled = false, g_autoTarget = true, g_captured = false;
 bool g_active = false, g_inFrame = false;
@@ -98,6 +99,7 @@ const char* g_status = "disabled";
 action::Selection g_selection;
 struct TargetProbe {
     int kind = -1;
+    unsigned objectMask = 0;
     Guid raw = 0;
     float distance = -1;
     const char* reason = "not sampled";
@@ -192,6 +194,32 @@ int __cdecl NativeApi(Lua* state) {
         Function<PushString>(0x84E350)(state, text);
         return 1;
     }
+    if (std::strcmp(command, "unitinfo") == 0) {
+        if (Function<GetTop>(0x84DBD0)(state) != 2 || type(state, 2) != 4)
+            return ReplyError(state, "unitinfo expects a GUID string");
+        std::size_t length = 0;
+        const char* text = Function<ToString>(0x84E0E0)(state, 2, &length);
+        Guid guid = 0;
+        if (!action::ParseGuid(text, length, guid)) return ReplyError(state, "Invalid unit GUID");
+        unsigned classId = 0;
+        int reaction = 0;
+        bool dead = false;
+        if (guid && *reinterpret_cast<void**>(0xB7436C)) {
+            void* unit = Function<Resolve>(0x4D4DB0)(guid, 8, "NozdorAction", 11);
+            void* player = Function<Resolve>(0x4D4DB0)(Function<GetPlayer>(0x4D3790)(), 0x10, "NozdorAction", 12);
+            void* stats = unit ? Field<void*>(unit, 0xD0) : nullptr;
+            void* descriptor = unit ? Field<void*>(unit, 8) : nullptr;
+            if (stats && descriptor && player) {
+                if (Field<unsigned>(descriptor, 8) & 0x10) classId = Field<unsigned char>(stats, 0x45);
+                reaction = Function<UnitReaction>(0x7251C0)(unit, player) + 1;
+                dead = Function<UnitTest>(0x716490)(unit);
+            }
+        }
+        Function<PushNumber>(0x84E2A0)(state, classId);
+        Function<PushNumber>(0x84E2A0)(state, reaction);
+        Function<PushBoolean>(0x84E4D0)(state, dead);
+        return 3;
+    }
     if (std::strcmp(command, "configure") == 0) {
         if (Function<GetTop>(0x84DBD0)(state) != 30 ||
             type(state, 2) != 1 || type(state, 3) != 1 ||
@@ -203,7 +231,7 @@ int __cdecl NativeApi(Lua* state) {
             type(state, 21) != 1 || type(state, 22) != 1 || type(state, 23) != 1 ||
             type(state, 24) != 1 || type(state, 25) != 1 || type(state, 26) != 1 ||
             type(state, 27) != 3 || type(state, 28) != 3 || type(state, 29) != 3 || type(state, 30) != 1)
-            return ReplyError(state, "configure expects protocol 11 camera profiles and input settings");
+            return ReplyError(state, "configure expects protocol 12 camera profiles and input settings");
         const double range = Function<ToNumber>(0x84E030)(state, 4);
         const double delay = Function<ToNumber>(0x84E030)(state, 5);
         if (!action::ValidSettings(range, delay))
@@ -277,7 +305,7 @@ int __cdecl NativeApi(Lua* state) {
         char guid[19] = "";
         if (g_pick) std::snprintf(guid, sizeof(guid), "0x%08X%08X",
             static_cast<unsigned>(g_pick >> 32), static_cast<unsigned>(g_pick));
-        Function<PushNumber>(0x84E2A0)(state, 11);
+        Function<PushNumber>(0x84E2A0)(state, 12);
         Function<PushString>(0x84E350)(state, kVersion);
         Function<PushBoolean>(0x84E4D0)(state, g_active);
         Function<PushString>(0x84E350)(state, guid);
@@ -677,12 +705,18 @@ Guid PickUnit(void* world, void* player, float cursorX = 0.5f, float cursorY = 0
     g_probe.raw = hit.guid;
     g_probe.ray = {hit.end.x - hit.start.x, hit.end.y - hit.start.y, hit.end.z - hit.start.z};
     g_probe.origin = hit.start;
-    if (kind != 2 || !hit.guid) {
+    if (kind < 2 || !hit.guid) {
         g_probe.reason = kind == 0 ? "no hit under crosshair" :
             kind == 1 ? "terrain under crosshair" : kind == 3 ? "world object under crosshair" : "model hit without GUID";
         return 0;
     }
-    void* target = Function<Resolve>(0x4D4DB0)(hit.guid, 8, "NozdorAction", 1);
+    void* target = Function<Resolve>(0x4D4DB0)(hit.guid, 1, "NozdorAction", 1);
+    void* descriptor = target ? Field<void*>(target, 8) : nullptr;
+    g_probe.objectMask = descriptor ? Field<unsigned>(descriptor, 8) : 0;
+    if (!(g_probe.objectMask & 8)) {
+        g_probe.reason = (g_probe.objectMask & 0x20) ? "world object under crosshair" : "GUID does not resolve to a unit";
+        return 0;
+    }
     const char* rejection = RejectTarget(player, target, g_probe.distance);
     g_probe.reason = rejection ? rejection : "eligible";
     return rejection ? 0 : hit.guid;
@@ -693,6 +727,8 @@ Guid PickNameplate(void* player, Guid guid, Guid fallback, DWORD now) {
     g_probe.kind = 2;
     g_probe.raw = guid;
     void* target = Function<Resolve>(0x4D4DB0)(guid, 8, "NozdorAction", 10);
+    void* descriptor = target ? Field<void*>(target, 8) : nullptr;
+    g_probe.objectMask = descriptor ? Field<unsigned>(descriptor, 8) : 0;
     const char* rejection = RejectTarget(player, target, g_probe.distance);
     g_probe.reason = rejection ? rejection : "eligible nameplate";
     return rejection ? 0 : guid;
@@ -702,8 +738,8 @@ void PublishProbe(DWORD now) {
     if (g_probeTime && now - g_probeTime < 1000) return;
     g_probeTime = now;
     std::snprintf(g_targetDiagnostic, sizeof(g_targetDiagnostic),
-        "Target probe: %s; kind=%d; GUID=%08X%08X; distance=%.1f/%.1f; models=%d; rect=%.3f,%.3f,%.3f,%.3f; ray=%.1f,%.1f,%.1f; origin=%.1f,%.1f,%.1f",
-        g_probe.reason, g_probe.kind, static_cast<unsigned>(g_probe.raw >> 32),
+        "Target probe: %s; kind=%d; mask=%X; GUID=%08X%08X; distance=%.1f/%.1f; models=%d; rect=%.3f,%.3f,%.3f,%.3f; ray=%.1f,%.1f,%.1f; origin=%.1f,%.1f,%.1f",
+        g_probe.reason, g_probe.kind, g_probe.objectMask, static_cast<unsigned>(g_probe.raw >> 32),
         static_cast<unsigned>(g_probe.raw), g_probe.distance, g_range, static_cast<int>(g_probe.models),
         g_probe.left, g_probe.right, g_probe.bottom, g_probe.top,
         g_probe.ray.x, g_probe.ray.y, g_probe.ray.z,
@@ -812,13 +848,7 @@ void Tick(void* world) {
     g_pick = PickNameplate(player, g_aimPlate, body, now);
     if (g_softTarget && g_autoTarget) {
         if (!SetHoverHook(true)) { ReleaseMouse("hover hook unavailable"); return; }
-        unsigned objectMask = 0;
-        if (g_probe.kind == 3 && g_probe.raw) {
-            void* object = Function<Resolve>(0x4D4DB0)(g_probe.raw, 1, "NozdorAction", 9);
-            void* descriptor = object ? Field<void*>(object, 8) : nullptr;
-            if (descriptor) objectMask = Field<unsigned>(descriptor, 8);
-        }
-        SetSoftHover(world, action::HoverGuid(g_probe.kind, g_probe.raw, g_pick, objectMask));
+        SetSoftHover(world, action::HoverGuid(g_probe.kind, g_probe.raw, g_pick, g_probe.objectMask));
     } else {
         SetHoverHook(false);
         ClearSoftHover();
@@ -942,7 +972,7 @@ BOOL WINAPI DllMain(HINSTANCE self, DWORD reason, LPVOID reserved) {
     if (reason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(self);
         OpenLog(self);
-        Log("NozdorAction 0.3.18 / mounted profiles / stock camera / reticles / x86 / exact client code guards");
+        Log("NozdorAction 0.3.20 / mounted profiles / stock camera / reticles / x86 / exact client code guards");
         if (!Install()) {
             if (g_log != INVALID_HANDLE_VALUE) CloseHandle(g_log);
             g_log = INVALID_HANDLE_VALUE;

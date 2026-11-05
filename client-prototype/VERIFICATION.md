@@ -1,4 +1,13 @@
-# Verification: 0.3.19, 2026-11-05
+# Verification: 0.3.20, 2026-11-05
+
+## 0.3.20 GUID colors, model game-object hover and friendly barless classes
+
+- User log contains kind-2 F110 game-object GUIDs rejected as units. IDA sub_4F9930 confirms kind 2 means a dynamic model hit, including game objects; kind 3 is not the exclusive game-object path. Regressed core test failed before the fix. Picking now resolves the live object descriptor mask for both kinds, retains unit-only hard selection, and publishes eligible game objects to hover/highlight. Probe diagnostics include the actual mask. Interaction remains explicit and unchanged.
+- Soft reticle colors now query the sampled GUID through typed unitinfo instead of depending on the current mouseover token matching a 100 ms status sample. Native class is read only for player objects, from unit fields+0x45 as in Lua_UnitClass; NPCs retain relation colors and dead units gray. Unit reaction uses the exact thiscall native routine +1 as in Lua_UnitReaction. Existing Lua token path remains a fallback; no unit-name matching or temporary target changes are used.
+- IDA evidence: color-highlight-ida-evidence.json. Four newly recorded ranges (pick classifier, unit class/reaction wrappers and native relation body) bring guards to 86. Original-EXE disassembly confirms ECX=source unit, one stack argument=other unit, return adjusted +1. Addon and DLL 0.3.20 use protocol 12, requiring a full restart.
+- RefinedBlizzPlates 1.12.0's friendly class cache is populated only from party/raid; its newer-engine path is unavailable because C_NamePlate is nil on this client. Installed Functions.lua now prefers exact NozdorAction.GetNameplateClass and keeps party/raid fallback. Its one-second update refreshes already visible friendly barless plates when native class info becomes available. Existing color checkboxes and HP styling remain controlled by RefinedBlizzPlates. Full original addon backed up outside the game; reproducible optional diff and instructions are in compat/. The release does not overwrite another addon's full source automatically.
+- All ten local checks pass: mixed model-hit kinds/masks, native colors with no mouseover, NPC relations/death/class/custom colors, exact plate class lookup, and a regression executing the installed RefinedBlizzPlates class resolver/periodic updater for ungrouped players, same-named group members, missing native data, NPCs, late bridge availability and stable refresh. The RBP test is conditional on its installed source; the base suite has nine tests. Fixtures are not live renderer observation.
+- In-game confirmation is still required for actual reticle colors, mailbox/ore silhouettes and friendly barless text with the user's RBP settings. No server changes, automatic interaction or setting resets are added.
 
 ## 0.3.19 close pre-opened stock backpack with interaction dialogs (addon only)
 

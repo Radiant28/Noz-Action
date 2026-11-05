@@ -29,6 +29,8 @@ def main():
         "NozdorAction-Install.ru.txt": ROOT / "distribution/NozdorAction-Install.ru.txt",
         "NozdorAction-README.ru.md": ROOT / "README.ru.md",
         "client-prototype/VERIFICATION.md": ROOT / "VERIFICATION.md",
+        "client-prototype/compat/README.ru.md": ROOT / "compat/README.ru.md",
+        "client-prototype/compat/RefinedBlizzPlates-1.12.0-class-colors.patch": ROOT / "compat/RefinedBlizzPlates-1.12.0-class-colors.patch",
     }
     for name in ("NozdorAction.toc", "Localization.lua", "NozdorAction.lua", "Bindings.xml", "Reticles.tga"):
         files["Interface/AddOns/NozdorAction/" + name] = ADDON / name
