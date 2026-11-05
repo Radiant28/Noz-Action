@@ -98,9 +98,12 @@ function LoadAddOn() error("Binding UI already mocked") end
 function GetCurrentKeyBoardFocus() return environment.focus end
 function IsAltKeyDown() return environment.alt end
 function IsLoggedIn() return not environment.loggedOut end
-function UnitExists(unit) return unit ~= "target" or not environment.noTarget end
+function UnitExists(unit)
+    if unit == "mouseover" then return not environment.noHover and not environment.noTarget end
+    return unit ~= "target" or not environment.noTarget
+end
 function UnitIsDeadOrGhost(unit)
-    if unit == "target" then return environment.targetDead end
+    if unit == "target" or unit == "mouseover" then return environment.targetDead end
     return environment.dead
 end
 environment.reaction = 5
@@ -118,7 +121,10 @@ function UnitHasVehicleUI() return environment.vehicle end
 function UnitInVehicle() return environment.vehicle end
 function SpellIsTargeting() return environment.spell end
 function IsMounted() return environment.mounted end
-function UnitGUID() return "0x000000000000000B" end
+function UnitGUID(unit)
+    if unit == "mouseover" and environment.noHover then return nil end
+    return environment.hoverGuid or "0x000000000000000B"
+end
 function UnitName() return "Test target" end
 environment.f6 = "EXISTING_BINDING"
 environment.bindings = {NOZDORACTION_TOGGLE = {}, NOZDORACTION_INTERACT = {}, NOZDORACTION_CURSOR = {}}
@@ -189,7 +195,7 @@ assert(NozdorActionSettingsScroll.scrollChild == NozdorActionSettingsContent)
 assert(#UISpecialFrames == 0, "Settings belong to standard options, not a floating dialog")
 assert(not NozdorActionCrosshair:IsShown())
 local native = {active = false, reason = "disabled", config = {}, interactions = 0,
-    diagnostic = "Target probe: terrain under crosshair; kind=1", protocol = 8}
+    diagnostic = "Target probe: terrain under crosshair; kind=1", protocol = 9}
 function NozdorActionNative(command, ...)
     if command == "cursorui" then
         assert(select("#", ...) == 2)
@@ -197,7 +203,8 @@ function NozdorActionNative(command, ...)
         assert(type(native.cursorAllowed) == "boolean" and type(native.overUI) == "boolean")
         return true
     elseif command == "status" then
-        return native.protocol, "0.3.11", native.active, "", native.reason, 10, native.config[5], native.diagnostic, environment.cursorHeld
+        return native.protocol, "0.3.13", native.active, environment.pickedGuid or "0x000000000000000B",
+            native.reason, 10, native.config[5], native.diagnostic, environment.cursorHeld
     elseif command == "interactcursor" then
         assert(select("#", ...) == 0)
         if not environment.cursorHeld or not native.cursorAllowed or not native.config[5] then return false end
@@ -209,7 +216,7 @@ function NozdorActionNative(command, ...)
         return true
     end
     assert(command == "configure")
-    assert(select("#", ...) == 28, "Protocol 8 requires 28 configure values")
+    assert(select("#", ...) == 29, "Protocol 9 requires 29 configure values")
     native.config = {...}
     native.active = native.config[1]
     native.reason = native.active and "active" or "disabled"
@@ -233,6 +240,7 @@ assert(native.config[17] == 0 and native.config[18] == 0 and native.config[19] =
 assert(not native.config[21] and native.config[22], "Cursor hold is default; input can switch its state")
 assert(not native.config[23] and not native.config[24] and not native.config[25])
 Near(native.config[26], 1.8); Near(native.config[27], 1.65); Near(native.config[28], 10)
+assert(native.config[29] and NozdorActionDB.softTarget, "New and migrated settings default to soft targeting")
 local function ReticleColor(r, g, b)
     Update()
     assert(#NozdorActionCrosshair.textures == 1, "One atlas texture covers every reticle shape")
@@ -242,6 +250,11 @@ local function ReticleColor(r, g, b)
 end
 assert(NozdorActionCrosshair.textures[1].texture == "Interface\\AddOns\\NozdorAction\\Reticles")
 ReticleColor(0.25, 1, 0.35)
+environment.pickedGuid = "0x000000000000000C"; ReticleColor(1, 1, 1)
+environment.pickedGuid = nil; environment.noHover = true; ReticleColor(1, 1, 1)
+environment.noHover = nil
+environment.hoverGuid = "0x000000000000000b"; ReticleColor(0.25, 1, 0.35)
+environment.hoverGuid = nil
 environment.reaction = 2; ReticleColor(1, 0.2, 0.2)
 environment.reaction = 4; ReticleColor(1, 0.85, 0.1)
 environment.reaction = 8; ReticleColor(0.25, 1, 0.35)
@@ -572,6 +585,10 @@ assert(native.cursorAllowed)
 environment.cursorHeld = true; Update()
 local cursorClicks = native.cursorInteractions or 0
 WorldFrame.scripts.OnMouseUp(WorldFrame, "LeftButton")
+assert((native.cursorInteractions or 0) == cursorClicks, "Soft mode LMB never dispatches an interaction")
+Check(NozdorActionSoftTarget, false)
+assert(not native.config[29], "Soft mode is available in addon settings")
+WorldFrame.scripts.OnMouseUp(WorldFrame, "LeftButton")
 assert(native.cursorInteractions == cursorClicks + 1, "Free cursor LMB interacts at the cursor, not reticle")
 WorldFrame.scripts.OnMouseUp(WorldFrame, "RightButton")
 assert(native.cursorInteractions == cursorClicks + 1)
@@ -587,6 +604,7 @@ assert(native.cursorInteractions == cursorClicks + 1, "Bags block pointer intera
 ContainerFrame1:Hide(); environment.cursorHeld = nil; Update()
 WorldFrame.scripts.OnMouseUp(WorldFrame, "LeftButton")
 assert(native.cursorInteractions == cursorClicks + 1, "Mouse-look LMB does not dispatch pointer interaction")
+Check(NozdorActionSoftTarget, true)
 NozdorAction.OpenSettings()
 NozdorActionCursorKey:SetText("CTRL-BUTTON2"); Click(Button("Apply Cursor"))
 assert(native.config[16] == 2 and native.config[17] == 2)
@@ -638,7 +656,7 @@ local messages = {}
 DEFAULT_CHAT_FRAME.AddMessage = function(self, message) messages[#messages + 1] = message end
 environment.focus = true; Update()
 SlashCmdList.NOZDORACTION("status")
-assert(not native.config[1] and messages[1]:find("0.3.11", 1, true))
+assert(not native.config[1] and messages[1]:find("0.3.13", 1, true))
 if TEST_LOCALE == "ruRU" then
     assert(BINDING_NAME_NOZDORACTION_SETTINGS == "Открыть настройки")
     assert(BINDING_NAME_NOZDORACTION_CURSOR == "Свободный курсор")
@@ -659,9 +677,9 @@ NozdorActionDB.range = 300; Event("ADDON_LOADED")
 assert(NozdorActionDB.range == 300 and native.config[3] == 300, "Preserve saved 300-yard range on load")
 NozdorActionDB.range = 301; Event("ADDON_LOADED")
 assert(NozdorActionDB.range == 40 and native.config[3] == 40, "Reject saved range beyond limit")
-native.protocol = 7; Update()
-assert(not NozdorActionCrosshair:IsShown(), "Reject old native protocol")
 native.protocol = 8; Update()
+assert(not NozdorActionCrosshair:IsShown(), "Reject old native protocol")
+native.protocol = 9; Update()
 NozdorActionNative = nil; Update()
 assert(not NozdorActionCrosshair:IsShown(), "Missing DLL hides reticle")
-print("PASS: protocol8; camera profiles; atlas reticles; dialog close; cursor bindings; target retention; UI gates")
+print("PASS: protocol9; camera profiles; atlas reticles; dialog close; cursor bindings; target retention; UI gates")

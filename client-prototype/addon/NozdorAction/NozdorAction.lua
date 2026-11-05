@@ -8,7 +8,7 @@ BINDING_NAME_NOZDORACTION_SETTINGS = L["Open settings"]
 BINDING_NAME_NOZDORACTION_INTERACT = L["Interact under crosshair (NPC / mail / loot)"]
 BINDING_NAME_NOZDORACTION_CURSOR = L["Free cursor"]
 
-local defaults = {autoTarget = true, range = 40, delay = 100, size = 20, opacity = 0.9,
+local defaults = {autoTarget = true, softTarget = true, range = 40, delay = 100, size = 20, opacity = 0.9,
     shoulder = 1.25, height = 0.65, distance = 6, cursorCenter = false,
     mountAdapt = true, mountDistance = 3, mountHeight = 1, leftShoulder = false, toggleUnbound = false,
     cursorKey = "ALT", cursorUnbound = false, keepTarget = false, cursorToggle = false, targetColor = true,
@@ -28,6 +28,7 @@ for i = 0, 9 do cursorKeys[tostring(i)] = 48 + i; cursorKeys["NUMPAD" .. i] = 96
 for i = 1, 24 do cursorKeys["F" .. i] = 111 + i end
 local enabled, elapsed, nativeActive = false, 0, false
 local stateText, nativeVersion, cameraApplied = L["DLL not connected"], "", false
+local softPicked = ""
 local targetDiagnostic = L["No targeting diagnostic available"]
 local settings, settingsContent, statusLabel, shapeLabel
 local cursorHeld = false
@@ -209,20 +210,25 @@ local function UpdateReticle()
     reticle:SetTexCoord((db.thickness - 1) / 8, db.thickness / 8, (db.style - 1) / 8, db.style / 8)
     if shapeLabel then shapeLabel:SetText(L[shapeNames[db.style]]) end
     local r, g, b = 1, 1, 1
-    if db.targetColor and UnitExists("target") then
+    local unit = "target"
+    if db.softTarget and nativeActive and db.autoTarget then
+        local hover = UnitGUID("mouseover")
+        unit = hover and softPicked ~= "" and string.lower(hover) == string.lower(softPicked) and "mouseover" or nil
+    end
+    if db.targetColor and unit and UnitExists(unit) then
         local classColor
-        if UnitIsPlayer("target") then
-            local _, class = UnitClass("target")
+        if UnitIsPlayer(unit) then
+            local _, class = UnitClass(unit)
             classColor = (CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[class]) or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[class])
         end
-        if UnitIsDeadOrGhost("target") then r, g, b = 0.55, 0.55, 0.55
+        if UnitIsDeadOrGhost(unit) then r, g, b = 0.55, 0.55, 0.55
         elseif classColor then r, g, b = classColor.r, classColor.g, classColor.b
         else
-            local reaction = UnitReaction("target", "player")
+            local reaction = UnitReaction(unit, "player")
             if reaction and reaction <= 3 then r, g, b = 1, 0.2, 0.2
             elseif reaction == 4 then r, g, b = 1, 0.85, 0.1
-            elseif (reaction and reaction >= 5) or UnitIsFriend("player", "target") then r, g, b = 0.25, 1, 0.35
-            elseif UnitCanAttack("player", "target") then r, g, b = 1, 0.2, 0.2 end
+            elseif (reaction and reaction >= 5) or UnitIsFriend("player", unit) then r, g, b = 0.25, 1, 0.35
+            elseif UnitCanAttack("player", unit) then r, g, b = 1, 0.2, 0.2 end
         end
     end
     reticle:SetVertexColor(r, g, b)
@@ -250,13 +256,14 @@ local function Sync()
         return
     end
     local ok, protocol, version, active, picked, reason, frames, shifted, diagnostic, held = pcall(native, "status")
-    if not ok or protocol ~= 8 then
+    if not ok or protocol ~= 9 then
         nativeActive, cameraApplied = false, false
         stateText = L["Update DLL and addon to compatible versions"]
         UpdateReticle()
         return
     end
     nativeVersion, nativeActive = tostring(version), active
+    softPicked = type(picked) == "string" and picked or ""
     cursorHeld = not not held
     targetDiagnostic = TranslateDiagnostic(diagnostic or L["Update DLL to 0.2.1 for targeting diagnostics"])
     cameraApplied = shifted
@@ -271,7 +278,7 @@ local function Sync()
         cursorKey, cursorModifiers, secondKey, secondModifiers, NozdorActionDB.keepTarget,
         NozdorActionDB.cursorToggle, CanRun(true), NozdorActionDB.stockCamera, NozdorActionDB.mountStockCamera,
         NozdorActionDB.mountCustom, NozdorActionDB.mountLeftShoulder and -NozdorActionDB.mountShoulder or NozdorActionDB.mountShoulder,
-        NozdorActionDB.mountCameraHeight, NozdorActionDB.mountCameraDistance)
+        NozdorActionDB.mountCameraHeight, NozdorActionDB.mountCameraDistance, NozdorActionDB.softTarget)
     SyncCursorUI()
     stateText = labels[reason] or tostring(reason)
     if not sent or not accepted then
@@ -304,6 +311,7 @@ WorldFrame:HookScript("OnMouseUp", function(self, button)
         type(NozdorActionNative) ~= "function" then return end
     local focus = GetMouseFocus and GetMouseFocus()
     if focus and focus ~= WorldFrame and focus ~= UIParent then return end
+    if NozdorActionDB.softTarget then return end
     local first, _, second = CursorBindings()
     if first == 2 or second == 2 then pcall(NozdorActionNative, "interactcursor") end
 end)
@@ -363,12 +371,12 @@ local function CreateSettings()
     settings.name = "Nozdor Action"
     settings:Hide()
     local title = settings:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.12")
+    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.13")
     local scroll = CreateFrame("ScrollFrame", "NozdorActionSettingsScroll", settings, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", settings, "TOPLEFT", 0, -45)
     scroll:SetPoint("BOTTOMRIGHT", settings, "BOTTOMRIGHT", -30, 8)
     settingsContent = CreateFrame("Frame", "NozdorActionSettingsContent", scroll)
-    settingsContent:SetWidth(550); settingsContent:SetHeight(1370)
+    settingsContent:SetWidth(550); settingsContent:SetHeight(1450)
     scroll:SetScrollChild(settingsContent)
     Button(settingsContent, L["Assign keys"], 20, -5, 170, function()
         if not KeyBindingFrame then LoadAddOn("Blizzard_BindingUI") end
@@ -480,7 +488,7 @@ local function CreateSettings()
     KeyEditor("NozdorActionCursorKey", L["Cursor key"], L["Apply Cursor"], "NOZDORACTION_CURSOR", -760)
     local cursorHelp = settingsContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     cursorHelp:SetPoint("TOPLEFT", 20, -825); cursorHelp:SetWidth(510); cursorHelp:SetJustifyH("LEFT")
-    cursorHelp:SetText(L["RMB: BUTTON2 here, or use the button below to enable toggle.\nCtrl/Shift/Alt keep cursor; LMB in the world interacts.\nOpen UI blocks switching; clicks on its controls still work."])
+    cursorHelp:SetText(L["RMB: BUTTON2 here, or use the button below to enable toggle.\nCtrl/Shift/Alt keep cursor. Soft mode: LMB selects only.\nOtherwise LMB interacts; open UI keeps normal clicks."])
     Button(settingsContent, L["Use RMB to toggle cursor"], 20, -867, 280, function()
         if InCombatLockdown() then
             DEFAULT_CHAT_FRAME:AddMessage(L["Nozdor Action: assign keys outside combat."]); return
@@ -515,6 +523,10 @@ local function CreateSettings()
     local profileHelp = settingsContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     profileHelp:SetPoint("TOPLEFT", 20, -1270); profileHelp:SetWidth(510); profileHelp:SetJustifyH("LEFT")
     profileHelp:SetText(L["Stock camera keeps the reticle and targeting, without shoulder offsets or preset zoom.\nMounted priority: stock camera, then independent profile, then adaptive extras.\nThe independent profile uses its own distance, height and shoulder; walls still clip it.\nInteract again to close an open NPC, mail or loot window."])
+    Check("NozdorActionSoftTarget", L["Soft target: select with LMB"], "softTarget", -1350)
+    local softHelp = settingsContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    softHelp:SetPoint("TOPLEFT", 20, -1390); softHelp:SetWidth(510); softHelp:SetJustifyH("LEFT")
+    softHelp:SetText(L["Hover highlights without changing target. LMB selects only; Interact uses its assigned key.\nYour selected target stays until another click. Disable soft targeting to restore automatic selection."])
     settings.refresh, settings.okay, settings.cancel = RefreshControls, Sync, Sync
     settings:SetScript("OnShow", RefreshControls)
     settings:SetScript("OnHide", Sync)

@@ -2,6 +2,12 @@
 #include <cassert>
 
 WPARAM forwardedFlags = 0;
+unsigned hoverNotifications = 0;
+Guid hoverNew = 0, hoverOld = 0;
+void* __cdecl TestHoverChange(const Guid* pair) {
+    ++hoverNotifications; hoverNew = pair[0]; hoverOld = pair[1];
+    return reinterpret_cast<void*>(123);
+}
 LRESULT CALLBACK TestWindowProc(HWND, UINT, WPARAM flags, LPARAM) {
     forwardedFlags = flags;
     assert(!(GetKeyState(VK_RBUTTON) & 0x8000));
@@ -12,6 +18,33 @@ LRESULT CALLBACK TestWindowProc(HWND, UINT, WPARAM flags, LPARAM) {
 }
 
 int main() {
+    const Guid nativeClear[] = {0, 42}, nativeOther[] = {99, 0};
+    assert(!NotifyHoverChange(nativeClear, true, 42, 42, TestHoverChange));
+    assert(!NotifyHoverChange(nativeOther, true, 42, 42, TestHoverChange));
+    assert(hoverNotifications == 0); // Native mouse look cannot clear/re-highlight the same soft target.
+    assert(NotifyHoverChange(nativeOther, true, 43, 42, TestHoverChange));
+    assert(hoverNotifications == 1 && hoverNew == 43 && hoverOld == 42);
+    assert(NotifyHoverChange(nativeOther, true, 0, 43, TestHoverChange));
+    assert(hoverNotifications == 2 && hoverNew == 0 && hoverOld == 43);
+    assert(NotifyHoverChange(nativeOther, false, 42, 42, TestHoverChange));
+    assert(hoverNotifications == 3 && hoverNew == 99 && hoverOld == 0);
+    g_pick = 42;
+    assert(!SelectionMouseMessage(WM_LBUTTONDOWN, false, 1000));
+    assert(g_clickSelection.Take(1000) == 0);
+    assert(SelectionMouseMessage(WM_LBUTTONDOWN, true, 1001));
+    g_pick = 43;
+    assert(SelectionMouseMessage(WM_LBUTTONDOWN, true, 1002));
+    assert(g_clickSelection.Take(1003) == 42); // Keep the clicked unit when the camera moves.
+    assert(SelectionMouseMessage(WM_LBUTTONUP, false, 1004));
+    assert(!SelectionMouseMessage(WM_LBUTTONUP, true, 1005));
+    assert(!SelectionMouseMessage(WM_RBUTTONDOWN, true, 1006));
+    assert(SelectionMouseMessage(WM_LBUTTONDBLCLK, true, 1007));
+    assert(g_clickSelection.Take(1008) == 43);
+    assert(SelectionMouseMessage(WM_LBUTTONUP, true, 1009));
+    g_pick = 0;
+    assert(SelectionMouseMessage(WM_LBUTTONDOWN, true, 1010));
+    assert(g_clickSelection.Take(1011) == 0);
+    assert(SelectionMouseMessage(WM_LBUTTONUP, false, 1012));
     for (int scenario = 0; scenario < 3; ++scenario) {
         g_probe = {};
         g_interactTime = scenario == 1 ? 1 : 1000;

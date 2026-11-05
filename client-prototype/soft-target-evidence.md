@@ -1,0 +1,12 @@
+# Soft targeting: local static evidence, 2026-11-05
+
+Exact input: WoW.exe SHA-256 c33f54116161b0baf3d6f3b58276688336e96c50a80e921f10a8d5a6c38a4a60.
+After the user enabled IDA MCP, read-only decompilation of 0x4F5980 and 0x51F790 confirmed the world hover setter ABI and g_trackedObject / EVENT_UPDATE_MOUSEOVER_UNIT path. Raw results: soft-target-ida-evidence.json.
+Method: installed MinGW objdump, read-only disassembly of the original EXE; historical OnLayerUpdate pseudocode in client-research/geometry-evidence.json.
+
+- OnLayerUpdate passes a PickResult pointer to thiscall 0x4F8190 at 0x4FA302. That function uses more than a GUID, so the prototype does not call it with a GUID-only buffer.
+- Instead reuse 0x4F5980: ECX=world, GUID low/high on stack, ret 8. It compares world+0x2C8/QWORD, creates a 16-byte pair (new, old), calls cdecl 0x51FB60 and updates world+0x2C8. 0x51FB60 forwards four DWORDs to cdecl 0x51F790.
+- 0x51F790 resolves the active player, removes the old model highlight, writes new mouseover GUID to 0xBD07A0/QWORD and updates model hover/tooltip and event 0x142. Its switch tables extend through 0x51FA4C. It does not assign the locked target at 0xBD07B0 or call CGGameUI::Target.
+- The new wrapper checks world hover versus global mouseover, because UI unit frames can update mouseover independently. A guarded CALL replacement at 0x4F59C0 intercepts only the world-hover notification adapter: while soft mouse look owns input it keeps the sampled hover and suppresses duplicate notifications, so stock mouse look cannot clear/re-highlight it every frame. Original pairs are forwarded unchanged outside this mode. Pausing releases only the owned global hover, even if the native world cache is already zero, and then resets the world cache; a different UI mouseover is preserved. The two existing hook failures roll back the added hover CALL as well.
+- LMB is consumed only in active, foreground, unpaused soft-target mouse look, before stock mouse handling. Its GUID snapshot is re-resolved and range/selectability checked on the game thread, then passed to the existing guarded CGGameUI::Target at 0x524BF0. No InteractGuid dispatch is part of LMB selection.
+- The three new code ranges are recorded in feature-ranges.json and guarded at load. Native calls, actual highlight visibility, event ordering, Cell and custom client windows require in-game confirmation; static evidence is not runtime verification.

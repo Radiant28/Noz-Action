@@ -6,6 +6,16 @@
 #include "../src/camera_math.h"
 
 int main(int argc, char** argv) {
+    action::ClickSelection click;
+    assert(click.Take(1000) == 0);
+    click.Queue(42, 1000);
+    assert(click.Take(1010) == 42 && click.Take(1010) == 0);
+    click.Queue(43, 1000);
+    assert(click.Take(1251) == 0);
+    click.Queue(44, 0xfffffff0u);
+    assert(click.Take(10) == 44);
+    click.Queue(45, 1000); click.Queue(0, 1001);
+    assert(click.Take(1002) == 0);
     if (argc == 2) {
         SetLastError(0);
         assert(LoadLibraryA(argv[1]) == nullptr);

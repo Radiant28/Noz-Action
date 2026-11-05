@@ -16,6 +16,18 @@ struct Decision {
     std::uint64_t target = 0;
 };
 
+struct ClickSelection {
+    std::uint64_t pending = 0;
+    std::uint32_t clickedAt = 0;
+
+    void Queue(std::uint64_t hover, std::uint32_t now) { pending = hover; clickedAt = now; }
+    std::uint64_t Take(std::uint32_t now) {
+        const auto result = now - clickedAt <= 250 ? pending : 0;
+        pending = 0;
+        return result;
+    }
+};
+
 struct Selection {
     std::uint64_t pending = 0;
     std::uint64_t owned = 0;

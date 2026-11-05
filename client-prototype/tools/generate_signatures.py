@@ -38,7 +38,7 @@ def main():
         size = int(item["size"], 16)
         offset = pe["file_offset"](int(item["address"], 16) - base, size, sections)
         if data[offset:offset + size] != bytes.fromhex(item["bytes"]):
-            raise SystemExit(f"New function differs from IDA at {item['address']}")
+            raise SystemExit(f"Function differs from recorded bytes at {item['address']}")
         ranges.append({"address": item["address"], "size": item["size"]})
     rows = []
     for entry in ranges:

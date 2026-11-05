@@ -1,4 +1,14 @@
-# Verification: 0.3.12, 2026-11-05
+# Verification: 0.3.13, 2026-11-05
+
+## 0.3.13 soft hover and LMB selection
+
+- Bundle: addon and DLL 0.3.13, protocol 9. Configure requires 29 typed values (30 Lua arguments including command); old DLL/addon protocol combinations are rejected.
+- Default-on softTarget is persisted and exposed in the standard addon options. Hover uses the existing world mouseover setter, not CGGameUI::Target. Reticle color uses mouseover only when its GUID matches the sampled hover, including player class colors. Disabling softTarget restores previous automatic selection.
+- The window procedure consumes world LMB down/up only for active soft-target mouse look, with live heartbeat, foreground, allowed UI state and no free cursor. It snapshots the picked GUID once per press. The game-thread consumer re-resolves/revalidates it and calls only the normal Target routine; it neither dispatches interaction nor clears the selected target on hover loss/empty clicks. Requests expire after 250 ms and are reset on pause, focus loss or mode change. Free cursor/UI clicks keep their stock path; the addon skips its extra free-cursor interaction in soft mode.
+- The hover adapter CALL at 0x4F59C0 is chained to preserve the soft hover during native mouse-look clears and to suppress duplicate highlight/sound events. Outside managed mouse look it forwards the original notification unchanged. Pause cleanup clears an owned global hover even if the native world cache is zero; installation failures roll back earlier hooks.
+- The native hover setter and its adapter/body are statically verified in the exact original EXE and added to runtime guards (76 ranges). Evidence and limits: soft-target-evidence.md. User-enabled IDA read-only decompilation subsequently confirmed the hover setter and mouseover update path; results are preserved in soft-target-ida-evidence.json. Runtime behavior is still unverified.
+- Nine CTest checks pass, including click snapshot/one-shot/expiry/timestamp wrap, consumed down/up/double click and UI-blocked clicks, native clear/foreign-hover suppression, one notification for actual hover changes and unchanged original pairs outside soft mode, three Lua locales, default/migrated/toggled soft setting, stale/nonmatching hover GUIDs and class colors. Existing camera, interaction, loader and client identity tests remain included.
+- Manual confirmation required: hover a second NPC without changing the first hard target; LMB selects without gossip/loot/autoattack; move camera between press/frame; click empty terrain; verify selected target survives hover loss; test players/classes, dead units, free cursor and Cell modifiers, bags/settings/auction, loading/focus transitions and old auto mode. Tests do not emulate the game renderer, event order or server.
 
 ## 0.3.12 NOZDOR panels and mail/bag close (addon-only)
 

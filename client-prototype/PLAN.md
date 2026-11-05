@@ -1,4 +1,7 @@
-# Nozdor Action 0.3.12
+# Nozdor Action 0.3.13
+
+- [x] Soft hover without hard-target changes; LMB selects only, native mouseover/class colors, addon setting and protocol 9.
+- [ ] Confirm soft hover, click selection and UI/Cell behavior inside WoW.
 
 Scope: extend the working 0.2.2 client-only DLL and addon. Keep source, build output and release packaging under client-prototype. Preserve the original EXE and existing SavedVariables.
 

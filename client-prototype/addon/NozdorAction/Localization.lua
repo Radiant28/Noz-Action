@@ -66,12 +66,12 @@ local ru = {
     ["Cursor is outside game window"] = "Курсор находится за пределами окна игры",
     ["Nozdor Action: invalid cursor key. Use F8, CTRL-F8, BUTTON2, BUTTON3, BUTTON4 or BUTTON5."] = "Nozdor Action: неверная клавиша курсора. Примеры: F8, CTRL-F8, BUTTON2–BUTTON5.",
     ["Nozdor Action: %s is not a held cursor key. Use a keyboard key or BUTTON2-5."] = "Nozdor Action: %s не подходит для удержания курсора. Выбери клавишу или BUTTON2–BUTTON5.",
-    ["RMB: BUTTON2 here, or use the button below to enable toggle.\nCtrl/Shift/Alt keep cursor; LMB in the world interacts.\nOpen UI blocks switching; clicks on its controls still work."] = "ПКМ: введи BUTTON2 или нажми кнопку переключения ниже.\nCtrl/Shift/Alt сохраняют курсор; ЛКМ по миру — взаимодействие.\nОткрытые окна блокируют переключение; клики по ним работают.",
+    ["RMB: BUTTON2 here, or use the button below to enable toggle.\nCtrl/Shift/Alt keep cursor. Soft mode: LMB selects only.\nOtherwise LMB interacts; open UI keeps normal clicks."] = "ПКМ: введи BUTTON2 или нажми кнопку переключения ниже.\nCtrl/Shift/Alt сохраняют курсор; в софт-режиме ЛКМ выбирает цель.\nОткрытые окна блокируют переключение; клики по ним работают.",
     ["Nozdor Action: use the assigned Toggle key to change mode."] = "Nozdor Action: меняй режим назначенной клавишей переключения.",
     ["Last active sample: "] = "Последняя проверка прицела: ",
     ["Nozdor Action: /nfa for settings. Mode starts OFF; F6 toggles if unassigned."] = "Nozdor Action: /nfa — настройки. Режим выключен; включи назначенной клавишей (по умолчанию F6, если свободна).",
     ["Expected a command string"] = "Ожидалась команда в виде строки",
-    ["configure expects protocol 8 camera profiles and input settings"] = "Нужны профили камеры и настройки ввода по протоколу 8",
+    ["configure expects protocol 9 camera profiles and input settings"] = "Нужны профили камеры и настройки ввода по протоколу 9",
     ["Invalid mounted camera profile"] = "Некорректный профиль камеры на маунте",
     ["Crosshair"] = "Разорванный крест",
     ["Plus"] = "Плюс",
@@ -128,6 +128,10 @@ local ru = {
     ["target selected"] = "цель выбрана",
     ["lost target cleared"] = "потерянная цель снята",
     ["native Target did not assign requested GUID"] = "клиент не разрешил выбрать эту цель",
+    ["Soft target: select with LMB"] = "Софт-таргет: выбор цели по ЛКМ",
+    ["Hover highlights without changing target. LMB selects only; Interact uses its assigned key.\nYour selected target stays until another click. Disable soft targeting to restore automatic selection."] = "Наведение подсвечивает объект, не меняя цель. ЛКМ только выбирает; взаимодействие — назначенной клавишей.\nВыбранная цель сохраняется до следующего клика. Выключи софт-таргет для прежнего автовыбора.",
+    ["soft target: click LMB to select"] = "предварительная цель: нажми ЛКМ для выбора",
+    ["target selected by click"] = "цель выбрана по ЛКМ",
 }
 
 NozdorActionLocale = setmetatable(GetLocale() == "ruRU" and ru or {}, {
