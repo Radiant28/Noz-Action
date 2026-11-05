@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstring>
 
-// Only install while the target's main thread is still suspended by our launcher.
+// Patch while the target is suspended, or on the sole UI thread that executes this CALL.
 inline bool ReplaceCall(unsigned char* site, const void* original, const void* hook) {
     if (site[0] != 0xE8) return false;
     std::uint32_t oldOffset;
@@ -29,4 +29,12 @@ inline bool ReplaceCall(unsigned char* site, const void* original, const void* h
     FlushInstructionCache(GetCurrentProcess(), site, 5);
     VirtualProtect(site, 5, protection, &ignored);
     return false;
+}
+
+inline bool ToggleCall(bool& installed, bool enabled, unsigned char* site,
+                       const void* original, const void* hook) {
+    if (installed == enabled) return true;
+    if (!ReplaceCall(site, installed ? hook : original, enabled ? hook : original)) return false;
+    installed = enabled;
+    return true;
 }

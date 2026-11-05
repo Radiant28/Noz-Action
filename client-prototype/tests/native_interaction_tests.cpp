@@ -17,7 +17,51 @@ LRESULT CALLBACK TestWindowProc(HWND, UINT, WPARAM flags, LPARAM) {
     return 123;
 }
 
+unsigned nativeClicks = 0;
+LRESULT CALLBACK StockWindowProc(HWND window, UINT message, WPARAM flags, LPARAM point) {
+    if (message < WM_MOUSEFIRST || message > WM_MOUSELAST) return DefWindowProcW(window, message, flags, point);
+    assert(flags == (MK_LBUTTON | MK_RBUTTON | MK_CONTROL));
+    if (message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) ++nativeClicks;
+    return 456;
+}
+
 int main() {
+    g_cameraEnabled = false;
+    g_active = true; // The last frame may still say active immediately after F6.
+    g_leftMouseConsumed = g_rightMouseConsumed = true;
+    g_clickSelection.Queue(42, GetTickCount());
+    g_previousWindowProc = StockWindowProc;
+    const WPARAM stockFlags = MK_LBUTTON | MK_RBUTTON | MK_CONTROL;
+    assert(CursorWindowProc(nullptr, WM_LBUTTONDOWN, stockFlags, 0) == 456);
+    assert(CursorWindowProc(nullptr, WM_LBUTTONUP, stockFlags, 0) == 456);
+    assert(CursorWindowProc(nullptr, WM_MOUSEMOVE, stockFlags, 0) == 456);
+    assert(nativeClicks == 2 && !g_leftMouseConsumed && !g_rightMouseConsumed);
+    assert(g_clickSelection.Take(GetTickCount()) == 0);
+    assert(!g_hoverHookInstalled && SetHoverHook(false));
+    g_cameraEnabled = g_cursorToggle = g_cursorMode.latched = true;
+    g_leftMouseConsumed = true;
+    g_clickSelection.Queue(42, GetTickCount());
+    assert(CursorWindowProc(nullptr, WM_LBUTTONDOWN, stockFlags, 0) == 456);
+    assert(CursorWindowProc(nullptr, WM_LBUTTONUP, stockFlags, 0) == 456);
+    assert(nativeClicks == 4 && !g_leftMouseConsumed && g_clickSelection.Take(GetTickCount()) == 0);
+    g_cameraEnabled = false; g_cursorMode = {};
+    WNDCLASSW klass{};
+    klass.lpfnWndProc = StockWindowProc;
+    klass.hInstance = GetModuleHandleW(nullptr);
+    klass.lpszClassName = L"NozdorActionInputFixture";
+    assert(RegisterClassW(&klass));
+    const HWND hidden = CreateWindowExW(0, klass.lpszClassName, L"", 0, 0, 0, 10, 10, nullptr, nullptr, klass.hInstance, nullptr);
+    assert(hidden);
+    g_cursorWindow = hidden;
+    g_previousWindowProc = reinterpret_cast<WNDPROC>(SetWindowLongPtrW(hidden, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(&CursorWindowProc)));
+    assert(g_previousWindowProc == StockWindowProc);
+    assert(SendMessageW(hidden, WM_LBUTTONDOWN, stockFlags, 0) == 456);
+    assert(RestoreCursorWindow());
+    assert(GetWindowLongPtrW(hidden, GWLP_WNDPROC) == reinterpret_cast<LONG_PTR>(&StockWindowProc));
+    assert(!g_cursorWindow && !g_previousWindowProc);
+    assert(SendMessageW(hidden, WM_LBUTTONUP, stockFlags, 0) == 456);
+    assert(DestroyWindow(hidden));
+    assert(UnregisterClassW(klass.lpszClassName, klass.hInstance));
     const Guid nativeClear[] = {0, 42}, nativeOther[] = {99, 0};
     assert(!NotifyHoverChange(nativeClear, true, 42, 42, TestHoverChange));
     assert(!NotifyHoverChange(nativeOther, true, 42, 42, TestHoverChange));

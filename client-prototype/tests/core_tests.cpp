@@ -256,6 +256,17 @@ int main(int argc, char** argv) {
     assert(ReplaceCall(code, code + 64, code + 32));
     assert(run() == 11);
     assert(!ReplaceCall(code + 5, code + 32, code + 64));
+    bool installed = false;
+    assert(ToggleCall(installed, false, nullptr, nullptr, nullptr));
+    for (unsigned cycle = 0; cycle < 3; ++cycle) {
+        assert(ToggleCall(installed, true, code, code + 32, code + 64));
+        assert(installed && run() == 22);
+        assert(ToggleCall(installed, true, code, code + 32, code + 64));
+        assert(ToggleCall(installed, false, code, code + 32, code + 64));
+        assert(!installed && run() == 11);
+    }
+    assert(!ToggleCall(installed, true, code, code + 16, code + 64));
+    assert(!installed && run() == 11);
     assert(VirtualFree(code, 0, MEM_RELEASE));
     std::puts("PASS: selection, shoulder/cursor geometry, mount smoothing, invalid settings, executed x86 CALL hook and rollback");
 }

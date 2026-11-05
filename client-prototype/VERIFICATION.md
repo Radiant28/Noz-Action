@@ -1,4 +1,13 @@
-# Verification: 0.3.14, 2026-11-05
+# Verification: 0.3.15, 2026-11-05
+
+## 0.3.15 stock input restoration while OFF / free cursor
+
+- User reports ordinary LMB and model/mail hover do not work even before the first F6 when using the DLL, while the same client without the DLL works. Separately reproduced a stale consumed-left-press regression with the production CursorWindowProc: the OFF click was swallowed. New regression failed before the fix and passes after it.
+- Full OFF is tested before key-state masking or selection processing. It clears only modification-owned gesture/request state and forwards stock mouse messages with identical flags. Configure clears stale gesture/latch/active state on full disable. Free cursor likewise drops stale left selection ownership; RMB gesture handling and Cell modifier masking remain available only while the action camera is enabled.
+- DLL startup now installs only the previously existing camera and frame CALLs. It does not subclass the window or patch the hover notification CALL until action mode needs them. ReleaseMouse restores the original hover CALL for OFF, free cursor, UI pause, focus loss, stale heartbeat and unavailable input. OFF restores the previous WndProc when it still owns the top of the chain; later third-party chains are preserved and the OFF procedure forwards unchanged.
+- The hover CALL is enabled only on the sole client UI thread for active soft mouse look. ToggleCall validates expected bytes and retains its installed state on failure. Stock hover callbacks and game-object behavior are physically restored in free cursor, rather than continuously passing through an installed hover hook.
+- All nine CTest checks pass. Regressions execute OFF down/up/move with stale active/consumed flags, free-cursor LMB with stale ownership, a real hidden Win32 window subclass/restore/send-message sequence, native clear passthrough and repeated executed x86 CALL enable/disable cycles plus failed transition rollback. These are fixtures, not game runtime observation.
+- Bundle: addon and DLL 0.3.15, protocol 9. Native DLL changed: a full game restart is mandatory. Binding files and user settings were not modified. Runtime confirmation still required for startup OFF LMB, player/NPC/mail silhouette hover, F6 transitions, free RMB cursor, Cell and custom client UI. Static tests do not prove silhouette rendering.
 
 ## 0.3.14 restore free-cursor interaction (addon-only)
 

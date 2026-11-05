@@ -132,6 +132,7 @@ local ru = {
     ["Mouse look: hover previews, LMB selects. Use Interact key to talk or loot.\nFree RMB cursor: LMB interacts at the cursor. Selected target stays until another click."] = "При управлении камерой наведение подсвечивает, ЛКМ выбирает цель; действие — клавишей взаимодействия.\nПри свободном курсоре ПКМ ЛКМ взаимодействует под курсором. Выбранная цель сохраняется до следующего клика.",
     ["soft target: click LMB to select"] = "предварительная цель: нажми ЛКМ для выбора",
     ["target selected by click"] = "цель выбрана по ЛКМ",
+    ["Hover input is unavailable"] = "Не удалось включить наведение",
 }
 
 NozdorActionLocale = setmetatable(GetLocale() == "ruRU" and ru or {}, {

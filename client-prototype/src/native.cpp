@@ -62,7 +62,7 @@ template<class T> T& Field(void* object, std::size_t offset) {
 }
 
 constexpr char kApiName[] = "NozdorActionNative";
-constexpr char kVersion[] = "0.3.13";
+constexpr char kVersion[] = "0.3.15";
 HANDLE g_log = INVALID_HANDLE_VALUE;
 bool g_enabled = false, g_autoTarget = true, g_captured = false;
 bool g_active = false, g_inFrame = false;
@@ -71,6 +71,7 @@ int g_cursorKeys[2] = {VK_MENU, 0};
 unsigned g_cursorModifiers[2] = {0, 0};
 bool g_keepTarget = false;
 bool g_softTarget = true, g_leftMouseConsumed = false;
+bool g_hoverHookInstalled = false;
 action::ClickSelection g_clickSelection;
 Guid g_softHover = 0;
 void* g_softWorld = nullptr;
@@ -152,6 +153,11 @@ bool CursorIsFree() {
     return g_cursorToggle ? g_cursorMode.latched : CursorKeyHeld();
 }
 
+void ResetMouseGestures() {
+    g_leftMouseConsumed = g_rightMouseConsumed = false;
+    g_clickSelection = {};
+}
+
 int __cdecl NativeApi(Lua* state) {
     const auto type = Function<Type>(0x84DEB0);
     if (type(state, 1) != 4) return ReplyError(state, "Expected a command string");
@@ -197,6 +203,11 @@ int __cdecl NativeApi(Lua* state) {
         const bool camera = Function<ToBoolean>(0x84E0B0)(state, 6) != 0;
         if ((camera && !g_cameraEnabled) || static_cast<float>(distance) != g_distance) g_zoomPending = true;
         g_cameraEnabled = camera;
+        if (!camera) {
+            ResetMouseGestures();
+            g_cursorMode = {};
+            g_active = false;
+        }
         g_shoulder = static_cast<float>(side);
         g_height = static_cast<float>(height);
         g_distance = static_cast<float>(distance);
@@ -288,6 +299,9 @@ int __cdecl NativeApi(Lua* state) {
     return ReplyError(state, "Unknown command");
 }
 
+bool SetHoverHook(bool enabled);
+bool RestoreCursorWindow();
+
 void ClearSoftHover() {
     const Guid owned = g_softHover;
     void* world = g_softWorld;
@@ -312,8 +326,10 @@ void SetSoftHover(void* world, Guid pick) {
 }
 
 void ReleaseMouse(const char* reason) {
+    if (!SetHoverHook(false)) Log("Could not restore stock hover CALL");
     ClearSoftHover();
     g_clickSelection = {};
+    g_leftMouseConsumed = false;
     void* input = *reinterpret_cast<void**>(0xC24954);
     if (g_captured && input) Function<LuaFunction>(0x5FC890)(nullptr);
     g_captured = false;
@@ -323,6 +339,7 @@ void ReleaseMouse(const char* reason) {
     g_status = reason;
     g_interactPending = false;
     g_cursorInteractPending = false;
+    if (!g_cameraEnabled) RestoreCursorWindow();
 }
 
 bool EnsureApi(Lua* state) {
@@ -353,10 +370,16 @@ void* NotifyHoverChange(const Guid* original, bool managed, Guid desired, Guid a
 }
 
 void* __cdecl HoverChangeHook(const Guid* change) {
+    if (!g_cameraEnabled) return Function<HoverChange>(0x51FB60)(change);
     const bool managed = g_softTarget && g_autoTarget && g_active && g_enabled && g_cursorInputAllowed &&
         GetTickCount() - g_heartbeat <= 500 && IsForeground() && !CursorIsFree();
     return NotifyHoverChange(change, managed, g_softHover, *reinterpret_cast<Guid*>(0xBD07A0),
                              Function<HoverChange>(0x51FB60));
+}
+
+bool SetHoverHook(bool enabled) {
+    return ToggleCall(g_hoverHookInstalled, enabled, reinterpret_cast<unsigned char*>(0x4F59C0),
+                      reinterpret_cast<void*>(0x51FB60), reinterpret_cast<void*>(&HoverChangeHook));
 }
 
 bool CursorMouseMessage(UINT message, bool bound, bool allowed, bool overUI) {
@@ -403,19 +426,25 @@ bool SelectionMouseMessage(UINT message, bool allowed, DWORD now) {
 }
 
 LRESULT CALLBACK CursorWindowProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+    // Full OFF must pass even a gesture started before F6 to the stock client unchanged.
+    if (!g_cameraEnabled) {
+        ResetMouseGestures();
+        return CallWindowProcW(g_previousWindowProc, window, message, wparam, lparam);
+    }
     if (g_rightMouseConsumed) {
         // Only the client thread's logical RMB is hidden; physical polling and modifiers stay intact.
         if (!MaskReservedRightMouse()) Log("Could not mask reserved RMB state");
         wparam = CursorMouseFlags(message, wparam, true);
     }
     const DWORD now = GetTickCount();
+    const bool freeCursor = CursorIsFree();
+    if (freeCursor) { g_leftMouseConsumed = false; g_clickSelection = {}; }
     if (SelectionMouseMessage(message, g_softTarget && g_autoTarget && g_active && g_cameraEnabled &&
         g_cursorInputAllowed && !g_cursorOverUI && now - g_heartbeat <= 500 &&
-        GetForegroundWindow() == window && !CursorIsFree(), now)) return 0;
+        GetForegroundWindow() == window && !freeCursor, now)) return 0;
     if (message != WM_RBUTTONDOWN && message != WM_RBUTTONUP && message != WM_RBUTTONDBLCLK) {
         if (message == WM_KILLFOCUS) {
-            g_rightMouseConsumed = g_leftMouseConsumed = false;
-            g_clickSelection = {};
+            ResetMouseGestures();
         }
         return CallWindowProcW(g_previousWindowProc, window, message, wparam, lparam);
     }
@@ -441,6 +470,19 @@ LRESULT CALLBACK CursorWindowProc(HWND window, UINT message, WPARAM wparam, LPAR
     return CallWindowProcW(g_previousWindowProc, window, message, wparam, lparam);
 }
 
+bool RestoreCursorWindow() {
+    ResetMouseGestures();
+    if (!g_cursorWindow) return true;
+    if (IsWindow(g_cursorWindow)) {
+        // A later addon may have chained our procedure; preserve that chain and pass through.
+        if (GetWindowLongPtrW(g_cursorWindow, GWLP_WNDPROC) != reinterpret_cast<LONG_PTR>(&CursorWindowProc)) return true;
+        if (!SetWindowLongPtrW(g_cursorWindow, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(g_previousWindowProc))) return false;
+    }
+    g_cursorWindow = nullptr;
+    g_previousWindowProc = nullptr;
+    return true;
+}
+
 bool EnsureCursorWindow() {
     HWND window = Function<GetWindow>(0x86C6A0)(0);
     if (!window) return false;
@@ -453,7 +495,7 @@ bool EnsureCursorWindow() {
     if (!previous) return false;
     g_previousWindowProc = previous;
     g_cursorWindow = window;
-    g_rightMouseConsumed = false;
+    ResetMouseGestures();
     return true;
 }
 
@@ -640,7 +682,7 @@ void Tick(void* world) {
     if (!EnsureApi(state)) return;
     const DWORD now = GetTickCount();
     const bool foreground = IsForeground();
-    if ((g_softTarget || g_cursorKeys[0] == VK_RBUTTON || g_cursorKeys[1] == VK_RBUTTON) && !EnsureCursorWindow()) {
+    if (g_cameraEnabled && (g_softTarget || g_cursorKeys[0] == VK_RBUTTON || g_cursorKeys[1] == VK_RBUTTON) && !EnsureCursorWindow()) {
         ReleaseMouse("right mouse unavailable"); return;
     }
     const bool freeCursor = g_cursorMode.Step(CursorKeyHeld(), g_cursorToggle, g_cameraEnabled,
@@ -687,11 +729,13 @@ void Tick(void* world) {
     g_active = true;
     g_status = "active";
     if (!g_autoTarget && !g_interactPending) {
+        SetHoverHook(false);
         ClearSoftHover(); g_clickSelection = {};
         g_pick = 0; g_selection = {}; g_probe = {};
         g_probe.reason = "automatic targeting disabled in addon"; PublishProbe(now); return;
     }
     if ((Field<unsigned>(input, 0x58) & 1) == 0) {
+        SetHoverHook(false);
         ClearSoftHover(); g_clickSelection = {};
         g_pick = 0;
         g_selection = {};
@@ -700,8 +744,13 @@ void Tick(void* world) {
         return;
     }
     g_pick = PickUnit(world, player);
-    if (g_softTarget && g_autoTarget) SetSoftHover(world, g_pick);
-    else ClearSoftHover();
+    if (g_softTarget && g_autoTarget) {
+        if (!SetHoverHook(true)) { ReleaseMouse("hover hook unavailable"); return; }
+        SetSoftHover(world, g_pick);
+    } else {
+        SetHoverHook(false);
+        ClearSoftHover();
+    }
     if (g_interactPending) {
         g_clickSelection = {};
         InteractUnderCrosshair(player, now, *reinterpret_cast<unsigned*>(0xD4139C) == 0); return;
@@ -793,17 +842,10 @@ bool Install() {
             return false;
         }
     }
-    if (!ReplaceCall(reinterpret_cast<unsigned char*>(0x4F59C0),
-                     reinterpret_cast<void*>(0x51FB60), reinterpret_cast<void*>(&HoverChangeHook))) {
-        Log("REFUSED: could not replace hover notification CALL");
-        return false;
-    }
     if (!ReplaceCall(reinterpret_cast<unsigned char*>(0x6074D5),
                      reinterpret_cast<void*>(0x605D60),
                      reinterpret_cast<void*>(&CameraCollisionHook))) {
         Log("REFUSED: could not replace camera collision CALL");
-        ReplaceCall(reinterpret_cast<unsigned char*>(0x4F59C0),
-                    reinterpret_cast<void*>(&HoverChangeHook), reinterpret_cast<void*>(0x51FB60));
         return false;
     }
     if (!ReplaceCall(reinterpret_cast<unsigned char*>(0x4FB031),
@@ -812,11 +854,9 @@ bool Install() {
         Log("REFUSED: could not replace the verified OnWorldUpdate CALL");
         ReplaceCall(reinterpret_cast<unsigned char*>(0x6074D5),
                     reinterpret_cast<void*>(&CameraCollisionHook), reinterpret_cast<void*>(0x605D60));
-        ReplaceCall(reinterpret_cast<unsigned char*>(0x4F59C0),
-                    reinterpret_cast<void*>(&HoverChangeHook), reinterpret_cast<void*>(0x51FB60));
         return false;
     }
-    Log("Installed frame, shoulder collision and hover CALL hooks; mode starts OFF");
+    Log("Installed frame and shoulder CALL hooks; mouse/hover hooks wait until mode ON");
     return true;
 }
 } // namespace
@@ -827,7 +867,7 @@ BOOL WINAPI DllMain(HINSTANCE self, DWORD reason, LPVOID reserved) {
     if (reason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(self);
         OpenLog(self);
-        Log("NozdorAction 0.3.13 / mounted profiles / stock camera / reticles / x86 / exact client code guards");
+        Log("NozdorAction 0.3.15 / mounted profiles / stock camera / reticles / x86 / exact client code guards");
         if (!Install()) {
             if (g_log != INVALID_HANDLE_VALUE) CloseHandle(g_log);
             g_log = INVALID_HANDLE_VALUE;

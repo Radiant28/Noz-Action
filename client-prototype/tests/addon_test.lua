@@ -203,7 +203,7 @@ function NozdorActionNative(command, ...)
         assert(type(native.cursorAllowed) == "boolean" and type(native.overUI) == "boolean")
         return true
     elseif command == "status" then
-        return native.protocol, "0.3.13", native.active, environment.pickedGuid or "0x000000000000000B",
+        return native.protocol, "0.3.15", native.active, environment.pickedGuid or "0x000000000000000B",
             native.reason, 10, native.config[5], native.diagnostic, environment.cursorHeld
     elseif command == "interactcursor" then
         assert(select("#", ...) == 0)
@@ -657,7 +657,7 @@ local messages = {}
 DEFAULT_CHAT_FRAME.AddMessage = function(self, message) messages[#messages + 1] = message end
 environment.focus = true; Update()
 SlashCmdList.NOZDORACTION("status")
-assert(not native.config[1] and messages[1]:find("0.3.13", 1, true))
+assert(not native.config[1] and messages[1]:find("0.3.15", 1, true))
 if TEST_LOCALE == "ruRU" then
     assert(BINDING_NAME_NOZDORACTION_SETTINGS == "Открыть настройки")
     assert(BINDING_NAME_NOZDORACTION_CURSOR == "Свободный курсор")

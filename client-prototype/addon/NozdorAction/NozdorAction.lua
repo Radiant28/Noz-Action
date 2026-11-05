@@ -82,6 +82,7 @@ reticle:SetAllPoints(crosshair)
 reticle:SetTexture("Interface\\AddOns\\NozdorAction\\Reticles")
 
 local labels = {
+    ["hover hook unavailable"] = L["Hover input is unavailable"],
     ["right mouse unavailable"] = L["RMB input is unavailable"],
     active = L["Active"], disabled = L["Off / paused by interface"], ["cursor key"] = L["Paused: free cursor"],
     focus = L["Paused: window not active"],
@@ -370,7 +371,7 @@ local function CreateSettings()
     settings.name = "Nozdor Action"
     settings:Hide()
     local title = settings:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.14")
+    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.15")
     local scroll = CreateFrame("ScrollFrame", "NozdorActionSettingsScroll", settings, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", settings, "TOPLEFT", 0, -45)
     scroll:SetPoint("BOTTOMRIGHT", settings, "BOTTOMRIGHT", -30, 8)
