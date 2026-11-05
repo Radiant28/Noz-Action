@@ -72,6 +72,7 @@ local function CursorBindings()
 end
 local worldReady = true
 local driver = CreateFrame("Frame")
+local FrameParent, FrameChildren = driver.GetParent, driver.GetChildren
 local crosshair = CreateFrame("Frame", "NozdorActionCrosshair", UIParent)
 crosshair:SetFrameStrata("HIGH")
 crosshair:SetPoint("CENTER", WorldFrame, "CENTER", 0, 0)
@@ -165,7 +166,6 @@ end
 
 local nameplateUnits = {}
 local function NameplateHints(focus)
-    if not C_NamePlate or type(C_NamePlate.GetNamePlateForUnit) ~= "function" then return "", "", false end
     local aimX, aimY = crosshair:GetCenter()
     local scale = crosshair:GetEffectiveScale()
     aimX, aimY = (aimX or 0) * scale, (aimY or 0) * scale
@@ -182,15 +182,25 @@ local function NameplateHints(focus)
         return (dx / w)^2 + (dy / h)^2
     end
     local function Visit(plate, token)
+        if not plate:IsVisible() then return end
         token = token or plate.unit or plate.namePlateUnitToken
-        if type(token) ~= "string" or C_NamePlate.GetNamePlateForUnit(token) ~= plate or not plate:IsVisible() then return end
-        local guid = UnitGUID(token)
+        local guid, owner = nil, plate
+        if C_NamePlate and C_NamePlate.GetNamePlateForUnit and type(token) == "string" and
+            C_NamePlate.GetNamePlateForUnit(token) == plate then guid = UnitGUID(token) end
+        if not guid then
+            local frame = plate
+            while frame and frame ~= WorldFrame and frame ~= UIParent do
+                local ok, nativeGuid = pcall(NozdorActionNative, "plateguid", frame)
+                if ok and type(nativeGuid) == "string" and nativeGuid ~= "" then guid, owner = nativeGuid, frame; break end
+                frame = FrameParent(frame)
+            end
+        end
         if type(guid) ~= "string" or not guid:match("^0[xX]%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x$") then return end
         local ancestor = focus
         for i = 1, 16 do
             if not ancestor then break end
-            if ancestor == plate then plateFocus = true; break end
-            ancestor = ancestor.GetParent and ancestor:GetParent()
+            if ancestor == owner then plateFocus = true; break end
+            ancestor = FrameParent(ancestor)
         end
         local function VisitRegions(region)
             if not region:IsVisible() then return end
@@ -198,14 +208,15 @@ local function NameplateHints(focus)
             if score and score < aimScore then aim, aimScore = guid, score end
             score = Hit(region, cursorX, cursorY)
             if score and score < cursorScore then cursor, cursorScore = guid, score end
-            for _, child in ipairs({region:GetChildren()}) do VisitRegions(child) end
+            for _, child in ipairs({FrameChildren(region)}) do VisitRegions(child) end
         end
         VisitRegions(plate)
     end
-    if type(C_NamePlate.GetNamePlates) == "function" then
+    if C_NamePlate and type(C_NamePlate.GetNamePlates) == "function" then
         for _, plate in pairs(C_NamePlate.GetNamePlates()) do Visit(plate, nameplateUnits[plate]) end
-    elseif type(WorldFrame.GetChildren) == "function" then
-        for _, plate in ipairs({WorldFrame:GetChildren()}) do Visit(plate, nameplateUnits[plate]) end
+    else
+        -- Native methods bypass addon replacements of WorldFrame:GetChildren/GetParent.
+        for _, plate in ipairs({FrameChildren(WorldFrame)}) do Visit(plate, nameplateUnits[plate]) end
     end
     for plate, token in pairs(nameplateUnits) do Visit(plate, token) end
     return aim, cursor, plateFocus
@@ -308,7 +319,7 @@ local function Sync()
         return
     end
     local ok, protocol, version, active, picked, reason, frames, shifted, diagnostic, held = pcall(native, "status")
-    if not ok or protocol ~= 10 then
+    if not ok or protocol ~= 11 then
         nativeActive, cameraApplied = false, false
         stateText = L["Update DLL and addon to compatible versions"]
         UpdateReticle()
@@ -422,7 +433,7 @@ local function CreateSettings()
     settings.name = "Nozdor Action"
     settings:Hide()
     local title = settings:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.17")
+    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.18")
     local scroll = CreateFrame("ScrollFrame", "NozdorActionSettingsScroll", settings, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", settings, "TOPLEFT", 0, -45)
     scroll:SetPoint("BOTTOMRIGHT", settings, "BOTTOMRIGHT", -30, 8)

@@ -24,6 +24,8 @@ using Type = int (__cdecl*)(Lua*, int);
 using ToString = const char* (__cdecl*)(Lua*, int, std::size_t*);
 using ToNumber = double (__cdecl*)(Lua*, int);
 using ToBoolean = int (__cdecl*)(Lua*, int);
+using ToUserdata = void* (__cdecl*)(Lua*, int);
+using RawGetI = void (__cdecl*)(Lua*, int, int);
 using PushString = void (__cdecl*)(Lua*, const char*);
 using PushNumber = void (__cdecl*)(Lua*, double);
 using PushBoolean = void (__cdecl*)(Lua*, int);
@@ -63,7 +65,7 @@ template<class T> T& Field(void* object, std::size_t offset) {
 }
 
 constexpr char kApiName[] = "NozdorActionNative";
-constexpr char kVersion[] = "0.3.17";
+constexpr char kVersion[] = "0.3.18";
 HANDLE g_log = INVALID_HANDLE_VALUE;
 bool g_enabled = false, g_autoTarget = true, g_captured = false;
 bool g_active = false, g_inFrame = false;
@@ -142,6 +144,19 @@ int ReplyError(Lua* state, const char* message) {
     return 2;
 }
 
+Guid NativeNameplateGuid(const void* frame) {
+    const auto address = reinterpret_cast<std::uintptr_t>(frame);
+    if (!address || address > UINTPTR_MAX - 0x2B0) return 0;
+    std::uintptr_t vtable = 0;
+    SIZE_T read = 0;
+    if (!ReadProcessMemory(GetCurrentProcess(), frame, &vtable, sizeof(vtable), &read) ||
+        read != sizeof(vtable) || vtable != 0xAA36F8) return 0;
+    Guid guid = 0;
+    if (!ReadProcessMemory(GetCurrentProcess(), reinterpret_cast<const void*>(address + 0x2A8),
+                           &guid, sizeof(guid), &read) || read != sizeof(guid)) return 0;
+    return guid;
+}
+
 bool CursorKeyHeld() {
     const unsigned held = ((GetAsyncKeyState(VK_SHIFT) & 0x8000) ? 1u : 0u) |
         ((GetAsyncKeyState(VK_CONTROL) & 0x8000) ? 2u : 0u) |
@@ -166,6 +181,17 @@ int __cdecl NativeApi(Lua* state) {
     const auto type = Function<Type>(0x84DEB0);
     if (type(state, 1) != 4) return ReplyError(state, "Expected a command string");
     const char* command = Function<ToString>(0x84E0E0)(state, 1, nullptr);
+    if (std::strcmp(command, "plateguid") == 0) {
+        if (Function<GetTop>(0x84DBD0)(state) != 2 || type(state, 2) != 5)
+            return ReplyError(state, "plateguid expects a frame");
+        Function<RawGetI>(0x84E670)(state, 2, 0);
+        const Guid guid = type(state, -1) == 2 ? NativeNameplateGuid(Function<ToUserdata>(0x84E1C0)(state, -1)) : 0;
+        Function<SetTop>(0x84DBF0)(state, 2);
+        char text[19] = "";
+        if (guid) std::snprintf(text, sizeof(text), "0x%08X%08X", static_cast<unsigned>(guid >> 32), static_cast<unsigned>(guid));
+        Function<PushString>(0x84E350)(state, text);
+        return 1;
+    }
     if (std::strcmp(command, "configure") == 0) {
         if (Function<GetTop>(0x84DBD0)(state) != 30 ||
             type(state, 2) != 1 || type(state, 3) != 1 ||
@@ -177,7 +203,7 @@ int __cdecl NativeApi(Lua* state) {
             type(state, 21) != 1 || type(state, 22) != 1 || type(state, 23) != 1 ||
             type(state, 24) != 1 || type(state, 25) != 1 || type(state, 26) != 1 ||
             type(state, 27) != 3 || type(state, 28) != 3 || type(state, 29) != 3 || type(state, 30) != 1)
-            return ReplyError(state, "configure expects protocol 10 camera profiles and input settings");
+            return ReplyError(state, "configure expects protocol 11 camera profiles and input settings");
         const double range = Function<ToNumber>(0x84E030)(state, 4);
         const double delay = Function<ToNumber>(0x84E030)(state, 5);
         if (!action::ValidSettings(range, delay))
@@ -251,7 +277,7 @@ int __cdecl NativeApi(Lua* state) {
         char guid[19] = "";
         if (g_pick) std::snprintf(guid, sizeof(guid), "0x%08X%08X",
             static_cast<unsigned>(g_pick >> 32), static_cast<unsigned>(g_pick));
-        Function<PushNumber>(0x84E2A0)(state, 10);
+        Function<PushNumber>(0x84E2A0)(state, 11);
         Function<PushString>(0x84E350)(state, kVersion);
         Function<PushBoolean>(0x84E4D0)(state, g_active);
         Function<PushString>(0x84E350)(state, guid);
@@ -916,7 +942,7 @@ BOOL WINAPI DllMain(HINSTANCE self, DWORD reason, LPVOID reserved) {
     if (reason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(self);
         OpenLog(self);
-        Log("NozdorAction 0.3.17 / mounted profiles / stock camera / reticles / x86 / exact client code guards");
+        Log("NozdorAction 0.3.18 / mounted profiles / stock camera / reticles / x86 / exact client code guards");
         if (!Install()) {
             if (g_log != INVALID_HANDLE_VALUE) CloseHandle(g_log);
             g_log = INVALID_HANDLE_VALUE;

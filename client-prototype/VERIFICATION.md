@@ -1,4 +1,13 @@
-# Verification: 0.3.17, 2026-11-05
+# Verification: 0.3.18, 2026-11-05
+
+## 0.3.18 original-client nameplate GUID bridge
+
+- User runtime query confirmed C_NamePlate is nil. Release 0.3.17 incorrectly relied on that optional newer-client API; installed API documentation and compatibility branches in other addons did not establish runtime availability. A new regression for a visible original-client plate with C_NamePlate absent failed on 0.3.17 and passes with the bridge.
+- Read-only IDA Pro MCP established CGNamePlateFrame constructor 0x98F790 sets primary vtable 0xAA36F8, and OnUpdate 0x98E9F0 resolves the unit GUID at object+0x2A8. Lua_EnumerateFrames 0x81B9C0 shows frame table raw numeric field zero is converted directly to the native frame pointer via 0x84E1C0. Despite its misleading IDA name, the latter implements Lua to-userdata semantics (light userdata type 2, full userdata type 7). Its cdecl ABI and RawGetI 0x84E670 are confirmed by original-EXE call instructions. Evidence: nameplate-ida-evidence.json.
+- New strictly typed plateguid(frame) command reads raw field zero, accepts a light native pointer, validates the exact primary nameplate vtable and reads only the GUID using checked ReadProcessMemory. It returns an empty string for other frames, unreadable/partial memory, null or overflowing pointers. It never reads identity from names/health, caches a plate's old unit, targets, or interacts. Tick retains existing live unit/range validation.
+- Lua now uses native Frame:GetChildren/GetParent method references taken from its own driver. This bypasses per-instance overrides such as RefinedBlizzPlates replacing WorldFrame:GetChildren with virtual frames and masking a virtual frame's real parent. Visible native plates and their child geometry are scanned independent of formatting addon. Optional C_NamePlate support is retained. No runtime hooks were added; four newly recorded function ranges bring exact-client guards to 82.
+- Addon/DLL 0.3.18 require protocol 11. Existing settings and bindings are preserved; empty-click target clearing from 0.3.17 remains. Nine automated checks pass, including the original-client failing regression, overridden frame methods, reused and hidden plates, unrelated UI exclusion, full 64-bit native identity, wrong vtables, invalid/overflow pointers and a real no-access memory page. The staged DLL also passed the foreign-host refusal check while the installed DLL was locked.
+- Full restart required. In-game confirmation is still needed for real plate geometry, hover rendering, hard selection and multiple skins; fixtures are not a live-game observation. Entirely detached replacement UI without a native plate association remains outside this mapping.
 
 ## 0.3.17 explicit empty clicks and generic nameplate hit regions
 

@@ -26,6 +26,26 @@ LRESULT CALLBACK StockWindowProc(HWND window, UINT message, WPARAM flags, LPARAM
 }
 
 int main() {
+    unsigned char plate[0x2B0]{};
+    Field<std::uintptr_t>(plate, 0) = 0xAA36F8;
+    Field<Guid>(plate, 0x2A8) = 0xF1301234ABCDEF01ull;
+    assert(NativeNameplateGuid(plate) == 0xF1301234ABCDEF01ull);
+    Field<Guid>(plate, 0x2A8) = 42; // Native frames are reused for different units.
+    assert(NativeNameplateGuid(plate) == 42);
+    Field<std::uintptr_t>(plate, 0) = 0xAA36A8; // Not the primary nameplate object.
+    assert(!NativeNameplateGuid(plate));
+    assert(!NativeNameplateGuid(nullptr));
+    assert(!NativeNameplateGuid(reinterpret_cast<void*>(1)));
+    assert(!NativeNameplateGuid(reinterpret_cast<void*>(UINTPTR_MAX - 4)));
+    SYSTEM_INFO info{}; GetSystemInfo(&info);
+    auto* pages = static_cast<unsigned char*>(VirtualAlloc(nullptr, info.dwPageSize * 2, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+    assert(pages);
+    auto* truncated = pages + info.dwPageSize - 4;
+    Field<std::uintptr_t>(truncated, 0) = 0xAA36F8;
+    DWORD oldProtection = 0;
+    assert(VirtualProtect(pages + info.dwPageSize, info.dwPageSize, PAGE_NOACCESS, &oldProtection));
+    assert(!NativeNameplateGuid(truncated));
+    assert(VirtualFree(pages, 0, MEM_RELEASE));
     g_plateTime = 1000;
     g_cursorInputAllowed = true; g_cursorOverUI = false;
     assert(PickNameplate(nullptr, 42, 43, 1251) == 43);

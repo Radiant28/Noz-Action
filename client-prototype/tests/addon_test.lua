@@ -210,7 +210,7 @@ assert(NozdorActionSettingsScroll.scrollChild == NozdorActionSettingsContent)
 assert(#UISpecialFrames == 0, "Settings belong to standard options, not a floating dialog")
 assert(not NozdorActionCrosshair:IsShown())
 local native = {active = false, reason = "disabled", config = {}, interactions = 0,
-    diagnostic = "Target probe: terrain under crosshair; kind=1", protocol = 10}
+    diagnostic = "Target probe: terrain under crosshair; kind=1", protocol = 11}
 function NozdorActionNative(command, ...)
     if command == "cursorui" then
         assert(select("#", ...) == 4)
@@ -219,20 +219,24 @@ function NozdorActionNative(command, ...)
         assert(type(native.aimPlate) == "string" and type(native.cursorPlate) == "string")
         return true
     elseif command == "status" then
-        return native.protocol, "0.3.17", native.active, environment.pickedGuid or "0x000000000000000B",
+        return native.protocol, "0.3.18", native.active, environment.pickedGuid or "0x000000000000000B",
             native.reason, 10, native.config[5], native.diagnostic, environment.cursorHeld
     elseif command == "interactcursor" then
         assert(select("#", ...) == 0)
         if not environment.cursorHeld or not native.cursorAllowed or not native.config[5] then return false end
         native.cursorInteractions = (native.cursorInteractions or 0) + 1
         return true
+    elseif command == "plateguid" then
+        local plate = ...
+        assert(select("#", ...) == 1 and type(plate) == "table")
+        return rawget(plate, "nativeGuid") or ""
     elseif command == "interact" then
         assert(select("#", ...) == 0, "One shared interaction action")
         native.interactions = native.interactions + 1
         return true
     end
     assert(command == "configure")
-    assert(select("#", ...) == 29, "Protocol 10 requires 29 configure values")
+    assert(select("#", ...) == 29, "Protocol 11 requires 29 configure values")
     native.config = {...}
     native.active = native.config[1]
     native.reason = native.active and "active" or "disabled"
@@ -290,18 +294,37 @@ assert(native.aimPlate == environment.unitGuids.nameplate1, "Event-only nameplat
 driver.scripts.OnEvent(driver, "NAME_PLATE_UNIT_REMOVED", "nameplate1"); Update()
 assert(native.aimPlate == "", "Removed event-only plate is discarded")
 plate.namePlateUnitToken, plate.unit = plate.unit, nil -- Older engines/addons expose this field instead.
-WorldFrame.GetChildren = function() return plate end
+WorldFrame.children = {plate}
 Update()
 assert(native.aimPlate == environment.unitGuids.nameplate1, "Already-visible plates on addon reload")
-WorldFrame.GetChildren = nil
+WorldFrame.children = nil
 C_NamePlate.GetNamePlates = enumerate
 environment.nameplates, environment.unitGuids, environment.mouseFocus = {}, nil, nil
 environment.cursorX, environment.cursorY = nil, nil
 Update()
 assert(native.aimPlate == "" and native.cursorPlate == "")
 local nameplateAPI = C_NamePlate
-C_NamePlate = nil; Update()
-assert(native.aimPlate == "" and native.cursorPlate == "", "Original engine keeps native model picking")
+C_NamePlate = nil
+plate.nativeGuid = "0xF1301234ABCDEF01"
+WorldFrame.children = {plate}
+Update()
+assert(native.aimPlate == plate.nativeGuid, "Original 3.3.5 engine has no C_NamePlate: use native frame GUID")
+WorldFrame.GetChildren = function() error("Nameplate addon replaces WorldFrame:GetChildren") end
+customBar.GetParent = function() return WorldFrame end -- Virtual frame hides its actual parent.
+plate.GetChildren = function() return end
+environment.mouseFocus = customBar
+Update()
+assert(native.aimPlate == plate.nativeGuid and not native.overUI, "Use native hierarchy despite per-instance addon overrides")
+plate.nativeGuid = "0xF1301234ABCDEF02"; Update()
+assert(native.aimPlate == plate.nativeGuid, "Reused plate must refresh GUID instead of caching its old unit")
+plate:Hide(); Update()
+assert(native.aimPlate == "", "Hidden legacy plates cannot retain stale hover")
+plate:Show()
+plate.nativeGuid = nil; Update()
+assert(native.aimPlate == "", "Unrelated frames cannot provide guessed unit identity")
+WorldFrame.GetChildren, customBar.GetParent, plate.GetChildren = nil, nil, nil
+environment.mouseFocus = nil
+WorldFrame.children = nil
 C_NamePlate = nameplateAPI
 Near(native.config[6], 1.25); Near(native.config[7], 0.65); Near(native.config[8], 6)
 assert(native.config[9] == false and native.config[12] == false and native.config[13] == true)
@@ -729,7 +752,7 @@ local messages = {}
 DEFAULT_CHAT_FRAME.AddMessage = function(self, message) messages[#messages + 1] = message end
 environment.focus = true; Update()
 SlashCmdList.NOZDORACTION("status")
-assert(not native.config[1] and messages[1]:find("0.3.17", 1, true))
+assert(not native.config[1] and messages[1]:find("0.3.18", 1, true))
 if TEST_LOCALE == "ruRU" then
     assert(BINDING_NAME_NOZDORACTION_SETTINGS == "Открыть настройки")
     assert(BINDING_NAME_NOZDORACTION_CURSOR == "Свободный курсор")
@@ -752,7 +775,7 @@ NozdorActionDB.range = 301; Event("ADDON_LOADED")
 assert(NozdorActionDB.range == 40 and native.config[3] == 40, "Reject saved range beyond limit")
 native.protocol = 8; Update()
 assert(not NozdorActionCrosshair:IsShown(), "Reject old native protocol")
-native.protocol = 10; Update()
+native.protocol = 11; Update()
 NozdorActionNative = nil; Update()
 assert(not NozdorActionCrosshair:IsShown(), "Missing DLL hides reticle")
-print("PASS: protocol10; camera profiles; atlas reticles; dialog close; cursor bindings; target retention; UI gates")
+print("PASS: protocol11; camera profiles; atlas reticles; dialog close; cursor bindings; target retention; UI gates")
