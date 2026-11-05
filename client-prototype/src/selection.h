@@ -32,14 +32,29 @@ void UpdateHoverHighlight(std::uint64_t previous, std::uint64_t next, Lookup loo
 struct ClickSelection {
     std::uint64_t pending = 0;
     std::uint32_t clickedAt = 0;
+    bool queued = false;
 
-    void Queue(std::uint64_t hover, std::uint32_t now) { pending = hover; clickedAt = now; }
-    std::uint64_t Take(std::uint32_t now) {
-        const auto result = now - clickedAt <= 250 ? pending : 0;
-        pending = 0;
+    void Queue(std::uint64_t hover, std::uint32_t now) { pending = hover; clickedAt = now; queued = true; }
+    Decision Take(std::uint32_t now) {
+        const Decision result = {queued && now - clickedAt <= 250, pending};
+        *this = {};
         return result;
     }
 };
+
+inline bool ParseGuid(const char* text, std::size_t length, std::uint64_t& guid) {
+    guid = 0;
+    if (length == 0) return true;
+    if (length != 18 || text[0] != '0' || (text[1] != 'x' && text[1] != 'X')) return false;
+    for (std::size_t i = 2; i < length; ++i) {
+        const char c = text[i];
+        const int digit = c >= '0' && c <= '9' ? c - '0' :
+            c >= 'a' && c <= 'f' ? c - 'a' + 10 : c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1;
+        if (digit < 0) return false;
+        guid = (guid << 4) | static_cast<unsigned>(digit);
+    }
+    return true;
+}
 
 struct Selection {
     std::uint64_t pending = 0;

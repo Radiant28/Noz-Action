@@ -63,7 +63,7 @@ template<class T> T& Field(void* object, std::size_t offset) {
 }
 
 constexpr char kApiName[] = "NozdorActionNative";
-constexpr char kVersion[] = "0.3.16";
+constexpr char kVersion[] = "0.3.17";
 HANDLE g_log = INVALID_HANDLE_VALUE;
 bool g_enabled = false, g_autoTarget = true, g_captured = false;
 bool g_active = false, g_inFrame = false;
@@ -78,6 +78,9 @@ Guid g_softHover = 0;
 void* g_softWorld = nullptr;
 bool g_cursorToggle = false, g_cursorInputAllowed = false;
 bool g_cursorOverUI = false, g_rightMouseConsumed = false;
+Guid g_aimPlate = 0, g_cursorPlate = 0;
+Guid g_cursorInteractPlate = 0;
+DWORD g_plateTime = 0;
 HWND g_cursorWindow = nullptr;
 WNDPROC g_previousWindowProc = nullptr;
 action::CursorMode g_cursorMode;
@@ -174,7 +177,7 @@ int __cdecl NativeApi(Lua* state) {
             type(state, 21) != 1 || type(state, 22) != 1 || type(state, 23) != 1 ||
             type(state, 24) != 1 || type(state, 25) != 1 || type(state, 26) != 1 ||
             type(state, 27) != 3 || type(state, 28) != 3 || type(state, 29) != 3 || type(state, 30) != 1)
-            return ReplyError(state, "configure expects protocol 9 camera profiles and input settings");
+            return ReplyError(state, "configure expects protocol 10 camera profiles and input settings");
         const double range = Function<ToNumber>(0x84E030)(state, 4);
         const double delay = Function<ToNumber>(0x84E030)(state, 5);
         if (!action::ValidSettings(range, delay))
@@ -248,7 +251,7 @@ int __cdecl NativeApi(Lua* state) {
         char guid[19] = "";
         if (g_pick) std::snprintf(guid, sizeof(guid), "0x%08X%08X",
             static_cast<unsigned>(g_pick >> 32), static_cast<unsigned>(g_pick));
-        Function<PushNumber>(0x84E2A0)(state, 9);
+        Function<PushNumber>(0x84E2A0)(state, 10);
         Function<PushString>(0x84E350)(state, kVersion);
         Function<PushBoolean>(0x84E4D0)(state, g_active);
         Function<PushString>(0x84E350)(state, guid);
@@ -260,10 +263,20 @@ int __cdecl NativeApi(Lua* state) {
         return 9;
     }
     if (std::strcmp(command, "cursorui") == 0) {
-        if (Function<GetTop>(0x84DBD0)(state) != 3 || type(state, 2) != 1 || type(state, 3) != 1)
-            return ReplyError(state, "cursorui expects two booleans");
+        if (Function<GetTop>(0x84DBD0)(state) != 5 || type(state, 2) != 1 || type(state, 3) != 1 ||
+            type(state, 4) != 4 || type(state, 5) != 4)
+            return ReplyError(state, "cursorui expects two booleans and two GUID strings");
+        Guid aim = 0, cursor = 0;
+        std::size_t length = 0;
+        const char* text = Function<ToString>(0x84E0E0)(state, 4, &length);
+        if (!action::ParseGuid(text, length, aim)) return ReplyError(state, "Invalid nameplate GUID");
+        text = Function<ToString>(0x84E0E0)(state, 5, &length);
+        if (!action::ParseGuid(text, length, cursor)) return ReplyError(state, "Invalid nameplate GUID");
         g_cursorInputAllowed = Function<ToBoolean>(0x84E0B0)(state, 2) != 0;
         g_cursorOverUI = Function<ToBoolean>(0x84E0B0)(state, 3) != 0;
+        g_aimPlate = g_cursorInputAllowed && !g_cursorOverUI ? aim : 0;
+        g_cursorPlate = g_cursorInputAllowed && !g_cursorOverUI ? cursor : 0;
+        g_plateTime = GetTickCount();
         Function<PushBoolean>(0x84E4D0)(state, 1);
         return 1;
     }
@@ -293,6 +306,7 @@ int __cdecl NativeApi(Lua* state) {
         g_cursorPick = action::CursorToViewport({point.x, point.y}, rect.right, rect.bottom);
         if (!g_cursorPick.valid) return ReplyError(state, "Cursor is outside game window");
         g_cursorInteractPending = true;
+        g_cursorInteractPlate = GetTickCount() - g_plateTime <= 250 ? g_cursorPlate : 0;
         g_interactTime = GetTickCount();
         Function<PushBoolean>(0x84E4D0)(state, 1);
         return 1;
@@ -434,7 +448,8 @@ bool SelectionMouseMessage(UINT message, bool allowed, DWORD now) {
     if (g_leftMouseConsumed) return true;
     if (!allowed) return false;
     g_leftMouseConsumed = true;
-    g_clickSelection.Queue(g_pick, now);
+    // Rejected units and non-targetable objects are not empty terrain.
+    if (g_pick || g_probe.kind == 0 || g_probe.kind == 1) g_clickSelection.Queue(g_pick, now);
     return true;
 }
 
@@ -647,6 +662,16 @@ Guid PickUnit(void* world, void* player, float cursorX = 0.5f, float cursorY = 0
     return rejection ? 0 : hit.guid;
 }
 
+Guid PickNameplate(void* player, Guid guid, Guid fallback, DWORD now) {
+    if (!guid || now - g_plateTime > 250 || !g_cursorInputAllowed || g_cursorOverUI) return fallback;
+    g_probe.kind = 2;
+    g_probe.raw = guid;
+    void* target = Function<Resolve>(0x4D4DB0)(guid, 8, "NozdorAction", 10);
+    const char* rejection = RejectTarget(player, target, g_probe.distance);
+    g_probe.reason = rejection ? rejection : "eligible nameplate";
+    return rejection ? 0 : guid;
+}
+
 void PublishProbe(DWORD now) {
     if (g_probeTime && now - g_probeTime < 1000) return;
     g_probeTime = now;
@@ -714,7 +739,8 @@ void Tick(void* world) {
             const Guid guid = Function<GetPlayer>(0x4D3790)();
             void* player = Function<Resolve>(0x4D4DB0)(guid, 0x10, "NozdorAction", 6);
             if (player && !Function<UnitTest>(0x716490)(player)) {
-                PickUnit(world, player, g_cursorPick.x, g_cursorPick.y);
+                const Guid body = PickUnit(world, player, g_cursorPick.x, g_cursorPick.y);
+                PickNameplate(player, g_cursorInteractPlate, body, now);
                 InteractUnderCrosshair(player, now, *reinterpret_cast<unsigned*>(0xD4139C) == 0);
             }
         }
@@ -756,7 +782,8 @@ void Tick(void* world) {
         g_probe = {}; g_probe.reason = "native screen picking disabled by input mode"; PublishProbe(now);
         return;
     }
-    g_pick = PickUnit(world, player);
+    const Guid body = PickUnit(world, player);
+    g_pick = PickNameplate(player, g_aimPlate, body, now);
     if (g_softTarget && g_autoTarget) {
         if (!SetHoverHook(true)) { ReleaseMouse("hover hook unavailable"); return; }
         unsigned objectMask = 0;
@@ -778,13 +805,16 @@ void Tick(void* world) {
     const Guid actual = *reinterpret_cast<Guid*>(0xBD07B0);
     if (g_softTarget) {
         g_selection = {};
-        const Guid clicked = g_clickSelection.Take(now);
-        if (clicked && clicked != actual) {
-            void* target = Function<Resolve>(0x4D4DB0)(clicked, 8, "NozdorAction", 7);
+        const auto clicked = g_clickSelection.Take(now);
+        if (clicked.change && !clicked.target) {
+            Function<SetTarget>(0x524BF0)(0);
+            g_probe.reason = "target cleared by empty click";
+        } else if (clicked.change && clicked.target != actual) {
+            void* target = Function<Resolve>(0x4D4DB0)(clicked.target, 8, "NozdorAction", 7);
             if (const char* rejection = RejectTarget(player, target, g_probe.distance)) g_probe.reason = rejection;
             else {
-                Function<SetTarget>(0x524BF0)(clicked);
-                g_probe.reason = *reinterpret_cast<Guid*>(0xBD07B0) == clicked ?
+                Function<SetTarget>(0x524BF0)(clicked.target);
+                g_probe.reason = *reinterpret_cast<Guid*>(0xBD07B0) == clicked.target ?
                     "target selected by click" : "native Target did not assign requested GUID";
             }
         } else if (g_pick) g_probe.reason = "soft target: click LMB to select";
@@ -886,7 +916,7 @@ BOOL WINAPI DllMain(HINSTANCE self, DWORD reason, LPVOID reserved) {
     if (reason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(self);
         OpenLog(self);
-        Log("NozdorAction 0.3.16 / mounted profiles / stock camera / reticles / x86 / exact client code guards");
+        Log("NozdorAction 0.3.17 / mounted profiles / stock camera / reticles / x86 / exact client code guards");
         if (!Install()) {
             if (g_log != INVALID_HANDLE_VALUE) CloseHandle(g_log);
             g_log = INVALID_HANDLE_VALUE;

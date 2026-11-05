@@ -3,7 +3,7 @@
 ## Notes: Shoulder camera, crosshair, interaction and settings for the NozdorAction x86 client prototype.
 ## Notes-ruRU: Камера за плечом, прицел, автовыбор цели и взаимодействие по клавише.
 ## Author: Nozdor client prototype
-## Version: 0.3.16
+## Version: 0.3.17
 ## SavedVariables: NozdorActionDB
 
 Localization.lua

@@ -1,4 +1,12 @@
-# Verification: 0.3.16, 2026-11-05
+# Verification: 0.3.17, 2026-11-05
+
+## 0.3.17 explicit empty clicks and generic nameplate hit regions
+
+- A queued zero GUID now differs from no click or an expired click. Mouse-look LMB on native no-hit/terrain invokes the existing guarded Target(0) path once. Hover loss alone preserves the hard target. Rejected unit hits and non-targetable game objects do not clear it; UI clicks remain excluded.
+- Nameplates are sampled through the client's documented C_NamePlate.GetNamePlates/GetNamePlateForUnit APIs and native plate.unit, with event/unit-token fallback. No name matching, health matching or dependency on a nameplate addon is used. Visible native plate bounds and all visible child frames are checked in physical screen coordinates, so addon-shifted child bars are included. Focus inside a validated plate belongs to the world; other UI focus excludes hints. Overlapping rectangles choose the closest normalized center.
+- The DLL accepts two strictly parsed hexadecimal GUID hints with the per-frame cursor UI state. Protocol 10 prevents mixed addon/DLL versions. Hints expire after 250 ms and each unit is re-resolved and checked against the existing self/type/distance rules. Empty/stale/UI-blocked hints retain model picking; rejected named units remain rejected. No new EXE addresses or patches were added (78 guards unchanged). Free cursor keeps stock hover/click handling; its existing interaction request can use a captured nameplate GUID.
+- Tests cover explicit empty versus absent/expired/consumed clicks, terrain versus rejected unit and game object, uint32 timer wrap, exact 64-bit GUID parsing (including malformed/embedded-zero input), hint age/UI gates, native API plates without any formatting addon, arbitrary shifted child bars without addon-specific fields, scale, hidden nodes, overlap, UI/Cell exclusion, missing API, event-only API, reload discovery, Russian/fallback locale and existing loader/input checks. All nine CTest checks passed.
+- Installed addon and DLL: 0.3.17, protocol 10. Full restart required. Runtime confirmation remains necessary: aim at a model and a nameplate, click to select, click terrain to clear, hover away without clicking to retain, test free RMB cursor/Cell and multiple nameplate skins. Fixtures do not render actual plates, verify every addon, or measure in-game frame time. Entirely detached replacement UI with no C_NamePlate unit association is outside the client's nameplate API.
 
 ## 0.3.16 game-object preview and explicit native visual hover
 

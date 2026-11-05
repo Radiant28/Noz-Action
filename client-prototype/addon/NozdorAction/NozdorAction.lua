@@ -163,11 +163,62 @@ local function CanRun(ignoreCursor)
     return true
 end
 
+local nameplateUnits = {}
+local function NameplateHints(focus)
+    if not C_NamePlate or type(C_NamePlate.GetNamePlateForUnit) ~= "function" then return "", "", false end
+    local aimX, aimY = crosshair:GetCenter()
+    local scale = crosshair:GetEffectiveScale()
+    aimX, aimY = (aimX or 0) * scale, (aimY or 0) * scale
+    local cursorX, cursorY = GetCursorPosition()
+    local aim, cursor, aimScore, cursorScore, plateFocus = "", "", math.huge, math.huge, false
+    local function Hit(frame, x, y)
+        if not frame or not frame:IsVisible() then return nil end
+        local cx, cy = frame:GetCenter()
+        if not cx or not cy then return nil end
+        local s = frame:GetEffectiveScale()
+        local dx, dy = x - cx * s, y - cy * s
+        local w, h = frame:GetWidth() * s, frame:GetHeight() * s
+        if w <= 0 or h <= 0 or math.abs(dx) > w / 2 or math.abs(dy) > h / 2 then return nil end
+        return (dx / w)^2 + (dy / h)^2
+    end
+    local function Visit(plate, token)
+        token = token or plate.unit or plate.namePlateUnitToken
+        if type(token) ~= "string" or C_NamePlate.GetNamePlateForUnit(token) ~= plate or not plate:IsVisible() then return end
+        local guid = UnitGUID(token)
+        if type(guid) ~= "string" or not guid:match("^0[xX]%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x$") then return end
+        local ancestor = focus
+        for i = 1, 16 do
+            if not ancestor then break end
+            if ancestor == plate then plateFocus = true; break end
+            ancestor = ancestor.GetParent and ancestor:GetParent()
+        end
+        local function VisitRegions(region)
+            if not region:IsVisible() then return end
+            local score = Hit(region, aimX, aimY)
+            if score and score < aimScore then aim, aimScore = guid, score end
+            score = Hit(region, cursorX, cursorY)
+            if score and score < cursorScore then cursor, cursorScore = guid, score end
+            for _, child in ipairs({region:GetChildren()}) do VisitRegions(child) end
+        end
+        VisitRegions(plate)
+    end
+    if type(C_NamePlate.GetNamePlates) == "function" then
+        for _, plate in pairs(C_NamePlate.GetNamePlates()) do Visit(plate, nameplateUnits[plate]) end
+    elseif type(WorldFrame.GetChildren) == "function" then
+        for _, plate in ipairs({WorldFrame:GetChildren()}) do Visit(plate, nameplateUnits[plate]) end
+    end
+    for plate, token in pairs(nameplateUnits) do Visit(plate, token) end
+    return aim, cursor, plateFocus
+end
+
 SyncCursorUI = function()
     if not NozdorActionDB or type(NozdorActionNative) ~= "function" then return end
     local focus = GetMouseFocus and GetMouseFocus()
-    local overUI = focus and focus ~= WorldFrame and focus ~= UIParent or false
-    pcall(NozdorActionNative, "cursorui", CanRun(true), overUI)
+    local allowed = CanRun(true)
+    local aim, cursor, plateFocus = "", "", false
+    if allowed then aim, cursor, plateFocus = NameplateHints(focus) end
+    local overUI = focus and focus ~= WorldFrame and focus ~= UIParent and not plateFocus or false
+    pcall(NozdorActionNative, "cursorui", allowed, overUI, overUI and "" or aim, overUI and "" or cursor)
 end
 
 local interactionWindows = {
@@ -257,7 +308,7 @@ local function Sync()
         return
     end
     local ok, protocol, version, active, picked, reason, frames, shifted, diagnostic, held = pcall(native, "status")
-    if not ok or protocol ~= 9 then
+    if not ok or protocol ~= 10 then
         nativeActive, cameraApplied = false, false
         stateText = L["Update DLL and addon to compatible versions"]
         UpdateReticle()
@@ -371,7 +422,7 @@ local function CreateSettings()
     settings.name = "Nozdor Action"
     settings:Hide()
     local title = settings:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.16")
+    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.17")
     local scroll = CreateFrame("ScrollFrame", "NozdorActionSettingsScroll", settings, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", settings, "TOPLEFT", 0, -45)
     scroll:SetPoint("BOTTOMRIGHT", settings, "BOTTOMRIGHT", -30, 8)
@@ -526,7 +577,7 @@ local function CreateSettings()
     Check("NozdorActionSoftTarget", L["Soft target: select with LMB"], "softTarget", -1350)
     local softHelp = settingsContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     softHelp:SetPoint("TOPLEFT", 20, -1390); softHelp:SetWidth(510); softHelp:SetJustifyH("LEFT")
-    softHelp:SetText(L["Mouse look: hover previews, LMB selects. Use Interact key to talk or loot.\nFree RMB cursor: LMB interacts at the cursor. Selected target stays until another click."])
+    softHelp:SetText(L["Mouse look: hover previews, LMB selects. Use Interact key to talk or loot.\nFree RMB cursor: LMB interacts at the cursor. Empty world clicks clear the target.\nNameplates also support hover and selection."])
     settings.refresh, settings.okay, settings.cancel = RefreshControls, Sync, Sync
     settings:SetScript("OnShow", RefreshControls)
     settings:SetScript("OnHide", Sync)
@@ -584,12 +635,21 @@ driver:RegisterEvent("PLAYER_LOGOUT")
 driver:RegisterEvent("PLAYER_ENTERING_WORLD")
 driver:RegisterEvent("UPDATE_BINDINGS")
 driver:RegisterEvent("PLAYER_REGEN_ENABLED")
+if C_NamePlate and C_NamePlate.GetNamePlateForUnit then
+    driver:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+    driver:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
+end
 driver:SetScript("OnEvent", function(self, event, name)
     if event == "ADDON_LOADED" and name == ADDON then LoadSettings()
     elseif event == "PLAYER_LEAVING_WORLD" or event == "PLAYER_LOGOUT" then
-        worldReady = false; Sync()
+        worldReady = false; nameplateUnits = {}; Sync()
     elseif event == "PLAYER_ENTERING_WORLD" then worldReady = true; Sync()
     elseif event == "UPDATE_BINDINGS" or event == "PLAYER_REGEN_ENABLED" then RefreshBindings()
+    elseif event == "NAME_PLATE_UNIT_ADDED" and C_NamePlate and C_NamePlate.GetNamePlateForUnit then
+        local plate = C_NamePlate.GetNamePlateForUnit(name)
+        if plate then nameplateUnits[plate] = name end
+    elseif event == "NAME_PLATE_UNIT_REMOVED" then
+        for plate, token in pairs(nameplateUnits) do if token == name then nameplateUnits[plate] = nil end end
     end
 end)
 driver:SetScript("OnUpdate", function(self, dt)

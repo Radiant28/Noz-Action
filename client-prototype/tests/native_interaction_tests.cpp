@@ -26,6 +26,14 @@ LRESULT CALLBACK StockWindowProc(HWND window, UINT message, WPARAM flags, LPARAM
 }
 
 int main() {
+    g_plateTime = 1000;
+    g_cursorInputAllowed = true; g_cursorOverUI = false;
+    assert(PickNameplate(nullptr, 42, 43, 1251) == 43);
+    assert(PickNameplate(nullptr, 0, 43, 1000) == 43);
+    g_cursorOverUI = true;
+    assert(PickNameplate(nullptr, 42, 43, 1000) == 43);
+    g_cursorOverUI = false; g_cursorInputAllowed = false;
+    assert(PickNameplate(nullptr, 42, 43, 1000) == 43);
     g_cameraEnabled = false;
     g_active = true; // The last frame may still say active immediately after F6.
     g_leftMouseConsumed = g_rightMouseConsumed = true;
@@ -36,14 +44,14 @@ int main() {
     assert(CursorWindowProc(nullptr, WM_LBUTTONUP, stockFlags, 0) == 456);
     assert(CursorWindowProc(nullptr, WM_MOUSEMOVE, stockFlags, 0) == 456);
     assert(nativeClicks == 2 && !g_leftMouseConsumed && !g_rightMouseConsumed);
-    assert(g_clickSelection.Take(GetTickCount()) == 0);
+    assert(!g_clickSelection.Take(GetTickCount()).change);
     assert(!g_hoverHookInstalled && SetHoverHook(false));
     g_cameraEnabled = g_cursorToggle = g_cursorMode.latched = true;
     g_leftMouseConsumed = true;
     g_clickSelection.Queue(42, GetTickCount());
     assert(CursorWindowProc(nullptr, WM_LBUTTONDOWN, stockFlags, 0) == 456);
     assert(CursorWindowProc(nullptr, WM_LBUTTONUP, stockFlags, 0) == 456);
-    assert(nativeClicks == 4 && !g_leftMouseConsumed && g_clickSelection.Take(GetTickCount()) == 0);
+    assert(nativeClicks == 4 && !g_leftMouseConsumed && !g_clickSelection.Take(GetTickCount()).change);
     g_cameraEnabled = false; g_cursorMode = {};
     WNDCLASSW klass{};
     klass.lpfnWndProc = StockWindowProc;
@@ -74,21 +82,31 @@ int main() {
     assert(hoverNotifications == 3 && hoverNew == 99 && hoverOld == 0);
     g_pick = 42;
     assert(!SelectionMouseMessage(WM_LBUTTONDOWN, false, 1000));
-    assert(g_clickSelection.Take(1000) == 0);
+    assert(!g_clickSelection.Take(1000).change);
     assert(SelectionMouseMessage(WM_LBUTTONDOWN, true, 1001));
     g_pick = 43;
     assert(SelectionMouseMessage(WM_LBUTTONDOWN, true, 1002));
-    assert(g_clickSelection.Take(1003) == 42); // Keep the clicked unit when the camera moves.
+    assert(g_clickSelection.Take(1003).target == 42); // Keep the clicked unit when the camera moves.
     assert(SelectionMouseMessage(WM_LBUTTONUP, false, 1004));
     assert(!SelectionMouseMessage(WM_LBUTTONUP, true, 1005));
     assert(!SelectionMouseMessage(WM_RBUTTONDOWN, true, 1006));
     assert(SelectionMouseMessage(WM_LBUTTONDBLCLK, true, 1007));
-    assert(g_clickSelection.Take(1008) == 43);
+    assert(g_clickSelection.Take(1008).target == 43);
     assert(SelectionMouseMessage(WM_LBUTTONUP, true, 1009));
-    g_pick = 0;
+    g_pick = 0; g_probe.kind = 1;
     assert(SelectionMouseMessage(WM_LBUTTONDOWN, true, 1010));
-    assert(g_clickSelection.Take(1011) == 0);
-    assert(SelectionMouseMessage(WM_LBUTTONUP, false, 1012));
+    const auto emptyClick = g_clickSelection.Take(1011);
+    assert(emptyClick.change && !emptyClick.target);
+    assert(!g_clickSelection.Take(1011).change);
+    assert(SelectionMouseMessage(WM_LBUTTONUP, true, 1012));
+    g_probe.kind = 2; // A rejected unit must not be treated as empty terrain.
+    assert(SelectionMouseMessage(WM_LBUTTONDOWN, true, 1013));
+    assert(!g_clickSelection.Take(1014).change);
+    assert(SelectionMouseMessage(WM_LBUTTONUP, true, 1015));
+    g_probe.kind = 3; // A mailbox/ore hover is not an empty click either.
+    assert(SelectionMouseMessage(WM_LBUTTONDOWN, true, 1016));
+    assert(!g_clickSelection.Take(1017).change);
+    assert(SelectionMouseMessage(WM_LBUTTONUP, true, 1018));
     for (int scenario = 0; scenario < 3; ++scenario) {
         g_probe = {};
         g_interactTime = scenario == 1 ? 1 : 1000;

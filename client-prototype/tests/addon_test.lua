@@ -2,10 +2,13 @@
 local frames, environment, categories = {}, {}, {}
 local noop = function() end
 function GetLocale() return TEST_LOCALE end
-function GetMouseFocus() return environment.mouseUI and InterfaceOptionsFrame or WorldFrame end
+function GetMouseFocus() return environment.mouseUI and InterfaceOptionsFrame or environment.mouseFocus or WorldFrame end
+function GetCursorPosition() return environment.cursorX or 0, environment.cursorY or 0 end
 local function Region(name, parent)
     local object = {name = name, parent = parent, scripts = {}, events = {}, shown = true, textures = {}}
     function object:GetName() return self.name end
+    function object:GetParent() return rawget(self, "parent") end
+    function object:GetChildren() return table.unpack(rawget(self, "children") or {}) end
     function object:GetWidth() return rawget(self, "width") or 1280 end
     function object:GetHeight() return rawget(self, "height") or 720 end
     function object:GetEffectiveScale() return rawget(self, "scale") or 1 end
@@ -55,7 +58,9 @@ local function Region(name, parent)
         return texture
     end
     function object:CreateFontString() return Region(nil, self) end
-    return setmetatable(object, {__index = function() return noop end})
+    return setmetatable(object, {__index = function(_, key)
+        if key ~= "VirtualPlate" and key ~= "unit" and key ~= "namePlateUnitToken" then return noop end
+    end})
 end
 function CreateFrame(kind, name, parent, template)
     local object = Region(name, parent)
@@ -122,6 +127,7 @@ function UnitInVehicle() return environment.vehicle end
 function SpellIsTargeting() return environment.spell end
 function IsMounted() return environment.mounted end
 function UnitGUID(unit)
+    if environment.unitGuids and environment.unitGuids[unit] ~= nil then return environment.unitGuids[unit] end
     if unit == "mouseover" and environment.noHover then return nil end
     return environment.hoverGuid or "0x000000000000000B"
 end
@@ -160,6 +166,15 @@ function SetOverrideBindingClick(owner, priority, key, button, mouseButton)
 end
 NozdorActionDB = {range = 999, delay = 0/0, size = "invalid", opacity = -2, shoulder = -1.7, cursorKey = "INVALID",
     style = 1.5, thickness = 99, mountCameraHeight = 0/0}
+environment.nameplates = {}
+C_NamePlate = {
+    GetNamePlates = function() return environment.nameplates end,
+    GetNamePlateForUnit = function(token)
+        for _, plate in pairs(environment.nameplates) do
+            if (plate.unit or plate.namePlateUnitToken) == token then return plate end
+        end
+    end,
+}
 assert(loadfile((ADDON_FILE:gsub("NozdorAction%.lua$", "Localization.lua"))))()
 local L = NozdorActionLocale
 assert(L["Unknown fallback label"] == "Unknown fallback label")
@@ -195,15 +210,16 @@ assert(NozdorActionSettingsScroll.scrollChild == NozdorActionSettingsContent)
 assert(#UISpecialFrames == 0, "Settings belong to standard options, not a floating dialog")
 assert(not NozdorActionCrosshair:IsShown())
 local native = {active = false, reason = "disabled", config = {}, interactions = 0,
-    diagnostic = "Target probe: terrain under crosshair; kind=1", protocol = 9}
+    diagnostic = "Target probe: terrain under crosshair; kind=1", protocol = 10}
 function NozdorActionNative(command, ...)
     if command == "cursorui" then
-        assert(select("#", ...) == 2)
-        native.cursorAllowed, native.overUI = ...
+        assert(select("#", ...) == 4)
+        native.cursorAllowed, native.overUI, native.aimPlate, native.cursorPlate = ...
         assert(type(native.cursorAllowed) == "boolean" and type(native.overUI) == "boolean")
+        assert(type(native.aimPlate) == "string" and type(native.cursorPlate) == "string")
         return true
     elseif command == "status" then
-        return native.protocol, "0.3.16", native.active, environment.pickedGuid or "0x000000000000000B",
+        return native.protocol, "0.3.17", native.active, environment.pickedGuid or "0x000000000000000B",
             native.reason, 10, native.config[5], native.diagnostic, environment.cursorHeld
     elseif command == "interactcursor" then
         assert(select("#", ...) == 0)
@@ -216,7 +232,7 @@ function NozdorActionNative(command, ...)
         return true
     end
     assert(command == "configure")
-    assert(select("#", ...) == 29, "Protocol 9 requires 29 configure values")
+    assert(select("#", ...) == 29, "Protocol 10 requires 29 configure values")
     native.config = {...}
     native.active = native.config[1]
     native.reason = native.active and "active" or "disabled"
@@ -231,6 +247,62 @@ assert(not native.config[1] and not native.config[5], "Reset camera must not ena
 InterfaceOptionsFrame:Hide(); Update()
 NozdorAction.Toggle(); Update()
 assert(native.config[1] and native.config[5] and NozdorActionCrosshair:IsShown())
+-- Exact unit GUIDs, physical coordinates, addon visual offsets and UI exclusion.
+local plate = Region(nil, WorldFrame)
+plate.unit = "nameplate1" -- Native client field, with no nameplate addon loaded.
+plate.centerX, plate.centerY, plate.width, plate.height, plate.scale = 320, 180, 80, 20, 2
+environment.nameplates = {plate}
+environment.unitGuids = {nameplate1 = "0xF1301234ABCDEF01"}
+environment.cursorX, environment.cursorY = 650, 360
+Update()
+assert(native.aimPlate == environment.unitGuids.nameplate1 and native.cursorPlate == native.aimPlate)
+plate:Hide(); Update()
+assert(native.aimPlate == "" and native.cursorPlate == "", "Hidden plates must not be picked")
+plate:Show()
+plate.centerY = 250 -- Body's native hitbox is now away from the visual bar.
+local customBar = Region(nil, plate)
+customBar.centerX, customBar.centerY = 640, 360
+customBar.width, customBar.height = 100, 16
+plate.children = {customBar} -- Any addon child; no private addon fields used.
+environment.mouseFocus = Region(nil, customBar)
+Update()
+assert(not native.overUI and native.aimPlate == environment.unitGuids.nameplate1, "Nameplate child is world input")
+local other = Region(nil, WorldFrame)
+other.unit, other.centerX, other.centerY, other.width, other.height = "nameplate2", 680, 360, 100, 16
+environment.nameplates[2] = other
+environment.unitGuids.nameplate2 = "0xF1301234ABCDEF02"
+Update()
+assert(native.aimPlate == environment.unitGuids.nameplate1, "Overlapping plates choose nearest bar center")
+customBar:Hide(); Update()
+assert(native.aimPlate == environment.unitGuids.nameplate2, "Hidden visual children are excluded")
+customBar:Show()
+environment.nameplates[2] = nil
+environment.mouseUI = true; Update()
+assert(native.overUI and native.aimPlate == "" and native.cursorPlate == "", "Cell/options focus wins over plates")
+environment.mouseUI = nil
+environment.unitGuids.nameplate1 = "same name without GUID"; Update()
+assert(native.aimPlate == "", "Never guess a unit from its name")
+environment.unitGuids.nameplate1 = "0xF1301234ABCDEF01"
+local enumerate = C_NamePlate.GetNamePlates
+C_NamePlate.GetNamePlates = nil
+driver.scripts.OnEvent(driver, "NAME_PLATE_UNIT_ADDED", "nameplate1"); Update()
+assert(native.aimPlate == environment.unitGuids.nameplate1, "Event-only nameplate API")
+driver.scripts.OnEvent(driver, "NAME_PLATE_UNIT_REMOVED", "nameplate1"); Update()
+assert(native.aimPlate == "", "Removed event-only plate is discarded")
+plate.namePlateUnitToken, plate.unit = plate.unit, nil -- Older engines/addons expose this field instead.
+WorldFrame.GetChildren = function() return plate end
+Update()
+assert(native.aimPlate == environment.unitGuids.nameplate1, "Already-visible plates on addon reload")
+WorldFrame.GetChildren = nil
+C_NamePlate.GetNamePlates = enumerate
+environment.nameplates, environment.unitGuids, environment.mouseFocus = {}, nil, nil
+environment.cursorX, environment.cursorY = nil, nil
+Update()
+assert(native.aimPlate == "" and native.cursorPlate == "")
+local nameplateAPI = C_NamePlate
+C_NamePlate = nil; Update()
+assert(native.aimPlate == "" and native.cursorPlate == "", "Original engine keeps native model picking")
+C_NamePlate = nameplateAPI
 Near(native.config[6], 1.25); Near(native.config[7], 0.65); Near(native.config[8], 6)
 assert(native.config[9] == false and native.config[12] == false and native.config[13] == true)
 Near(native.config[10], 0.25); Near(native.config[11], 2/9)
@@ -657,7 +729,7 @@ local messages = {}
 DEFAULT_CHAT_FRAME.AddMessage = function(self, message) messages[#messages + 1] = message end
 environment.focus = true; Update()
 SlashCmdList.NOZDORACTION("status")
-assert(not native.config[1] and messages[1]:find("0.3.16", 1, true))
+assert(not native.config[1] and messages[1]:find("0.3.17", 1, true))
 if TEST_LOCALE == "ruRU" then
     assert(BINDING_NAME_NOZDORACTION_SETTINGS == "Открыть настройки")
     assert(BINDING_NAME_NOZDORACTION_CURSOR == "Свободный курсор")
@@ -680,7 +752,7 @@ NozdorActionDB.range = 301; Event("ADDON_LOADED")
 assert(NozdorActionDB.range == 40 and native.config[3] == 40, "Reject saved range beyond limit")
 native.protocol = 8; Update()
 assert(not NozdorActionCrosshair:IsShown(), "Reject old native protocol")
-native.protocol = 9; Update()
+native.protocol = 10; Update()
 NozdorActionNative = nil; Update()
 assert(not NozdorActionCrosshair:IsShown(), "Missing DLL hides reticle")
-print("PASS: protocol9; camera profiles; atlas reticles; dialog close; cursor bindings; target retention; UI gates")
+print("PASS: protocol10; camera profiles; atlas reticles; dialog close; cursor bindings; target retention; UI gates")

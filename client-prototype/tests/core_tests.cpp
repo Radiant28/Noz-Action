@@ -25,15 +25,28 @@ int main(int argc, char** argv) {
     assert(cleared[1] == 1);
     action::UpdateHoverHighlight(99, 99, lookup, highlight); // Despawned objects are not dereferenced.
     action::ClickSelection click;
-    assert(click.Take(1000) == 0);
+    assert(!click.Take(1000).change);
     click.Queue(42, 1000);
-    assert(click.Take(1010) == 42 && click.Take(1010) == 0);
+    auto chosen = click.Take(1010);
+    assert(chosen.change && chosen.target == 42 && !click.Take(1010).change);
     click.Queue(43, 1000);
-    assert(click.Take(1251) == 0);
+    assert(!click.Take(1251).change);
     click.Queue(44, 0xfffffff0u);
-    assert(click.Take(10) == 44);
+    chosen = click.Take(10);
+    assert(chosen.change && chosen.target == 44);
     click.Queue(45, 1000); click.Queue(0, 1001);
-    assert(click.Take(1002) == 0);
+    chosen = click.Take(1002);
+    assert(chosen.change && !chosen.target && !click.Take(1002).change);
+    click.Queue(0, 1000);
+    assert(!click.Take(1251).change); // An expired empty click cannot clear a target.
+    std::uint64_t guid = 0;
+    assert(action::ParseGuid("0xF1301234ABCDEF01", 18, guid) && guid == 0xF1301234ABCDEF01ull);
+    assert(action::ParseGuid("0Xf1301234abcdef01", 18, guid) && guid == 0xF1301234ABCDEF01ull);
+    assert(action::ParseGuid("", 0, guid) && !guid);
+    assert(!action::ParseGuid("0x123", 5, guid));
+    assert(!action::ParseGuid("0xF1301234ABCDEFO1", 18, guid));
+    assert(!action::ParseGuid("0xF1301234ABCDEF01tail", 22, guid));
+    assert(!action::ParseGuid("0xF1301234ABCDE\0" "01", 18, guid));
     if (argc == 2) {
         SetLastError(0);
         assert(LoadLibraryA(argv[1]) == nullptr);
