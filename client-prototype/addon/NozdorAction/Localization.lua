@@ -66,7 +66,7 @@ local ru = {
     ["Cursor is outside game window"] = "Курсор находится за пределами окна игры",
     ["Nozdor Action: invalid cursor key. Use F8, CTRL-F8, BUTTON2, BUTTON3, BUTTON4 or BUTTON5."] = "Nozdor Action: неверная клавиша курсора. Примеры: F8, CTRL-F8, BUTTON2–BUTTON5.",
     ["Nozdor Action: %s is not a held cursor key. Use a keyboard key or BUTTON2-5."] = "Nozdor Action: %s не подходит для удержания курсора. Выбери клавишу или BUTTON2–BUTTON5.",
-    ["RMB: BUTTON2 here, or use the button below to enable toggle.\nCtrl/Shift/Alt keep cursor. Soft mode: LMB selects only.\nOtherwise LMB interacts; open UI keeps normal clicks."] = "ПКМ: введи BUTTON2 или нажми кнопку переключения ниже.\nCtrl/Shift/Alt сохраняют курсор; в софт-режиме ЛКМ выбирает цель.\nОткрытые окна блокируют переключение; клики по ним работают.",
+    ["RMB: BUTTON2 here, or use the button below to enable toggle.\nCtrl/Shift/Alt keep cursor. Mouse look: LMB selects.\nFree RMB cursor: LMB interacts; UI keeps normal clicks."] = "ПКМ: введи BUTTON2 или нажми кнопку переключения ниже.\nCtrl/Shift/Alt сохраняют курсор; в управлении камерой ЛКМ выбирает цель.\nПри свободном курсоре ПКМ ЛКМ взаимодействует; клики по окнам работают.",
     ["Nozdor Action: use the assigned Toggle key to change mode."] = "Nozdor Action: меняй режим назначенной клавишей переключения.",
     ["Last active sample: "] = "Последняя проверка прицела: ",
     ["Nozdor Action: /nfa for settings. Mode starts OFF; F6 toggles if unassigned."] = "Nozdor Action: /nfa — настройки. Режим выключен; включи назначенной клавишей (по умолчанию F6, если свободна).",
@@ -129,7 +129,7 @@ local ru = {
     ["lost target cleared"] = "потерянная цель снята",
     ["native Target did not assign requested GUID"] = "клиент не разрешил выбрать эту цель",
     ["Soft target: select with LMB"] = "Софт-таргет: выбор цели по ЛКМ",
-    ["Hover highlights without changing target. LMB selects only; Interact uses its assigned key.\nYour selected target stays until another click. Disable soft targeting to restore automatic selection."] = "Наведение подсвечивает объект, не меняя цель. ЛКМ только выбирает; взаимодействие — назначенной клавишей.\nВыбранная цель сохраняется до следующего клика. Выключи софт-таргет для прежнего автовыбора.",
+    ["Mouse look: hover previews, LMB selects. Use Interact key to talk or loot.\nFree RMB cursor: LMB interacts at the cursor. Selected target stays until another click."] = "При управлении камерой наведение подсвечивает, ЛКМ выбирает цель; действие — клавишей взаимодействия.\nПри свободном курсоре ПКМ ЛКМ взаимодействует под курсором. Выбранная цель сохраняется до следующего клика.",
     ["soft target: click LMB to select"] = "предварительная цель: нажми ЛКМ для выбора",
     ["target selected by click"] = "цель выбрана по ЛКМ",
 }

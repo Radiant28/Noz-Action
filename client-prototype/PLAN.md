@@ -1,4 +1,6 @@
-# Nozdor Action 0.3.13
+# Nozdor Action 0.3.14
+
+- [x] Keep free RMB cursor + LMB interaction in both soft and automatic targeting modes.
 
 - [x] Soft hover without hard-target changes; LMB selects only, native mouseover/class colors, addon setting and protocol 9.
 - [ ] Confirm soft hover, click selection and UI/Cell behavior inside WoW.

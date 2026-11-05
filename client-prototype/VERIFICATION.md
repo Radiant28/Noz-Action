@@ -1,4 +1,10 @@
-# Verification: 0.3.13, 2026-11-05
+# Verification: 0.3.14, 2026-11-05
+
+## 0.3.14 restore free-cursor interaction (addon-only)
+
+- The 0.3.13 WorldFrame OnMouseUp handler incorrectly returned whenever softTarget was enabled, disabling the existing RMB-free-cursor LMB interaction. Removed that mode-wide guard. Native interactcursor still requires actual free cursor, live heartbeat, allowed UI and RMB binding; mouse-look LMB remains consumed by the native soft-selection handler and selects only.
+- Both soft/automatic modes now run the same Lua regression sequence: free cursor LMB dispatches one pointer interaction, RMB does not, UI/Cell focus/typing/bags do not dispatch, mouse-look LMB does not interact. Tests run in English, Russian and fallback locales, alongside the existing native checks.
+- Bundle: addon 0.3.14, unchanged DLL 0.3.13, protocol 9. Existing 0.3.13 users need only addon replacement and /reload. Settings and bindings are preserved. All nine CTest checks passed; game interaction and Cell remain to be confirmed inside WoW.
 
 ## 0.3.13 soft hover and LMB selection
 

@@ -311,7 +311,6 @@ WorldFrame:HookScript("OnMouseUp", function(self, button)
         type(NozdorActionNative) ~= "function" then return end
     local focus = GetMouseFocus and GetMouseFocus()
     if focus and focus ~= WorldFrame and focus ~= UIParent then return end
-    if NozdorActionDB.softTarget then return end
     local first, _, second = CursorBindings()
     if first == 2 or second == 2 then pcall(NozdorActionNative, "interactcursor") end
 end)
@@ -371,7 +370,7 @@ local function CreateSettings()
     settings.name = "Nozdor Action"
     settings:Hide()
     local title = settings:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.13")
+    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.14")
     local scroll = CreateFrame("ScrollFrame", "NozdorActionSettingsScroll", settings, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", settings, "TOPLEFT", 0, -45)
     scroll:SetPoint("BOTTOMRIGHT", settings, "BOTTOMRIGHT", -30, 8)
@@ -488,7 +487,7 @@ local function CreateSettings()
     KeyEditor("NozdorActionCursorKey", L["Cursor key"], L["Apply Cursor"], "NOZDORACTION_CURSOR", -760)
     local cursorHelp = settingsContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     cursorHelp:SetPoint("TOPLEFT", 20, -825); cursorHelp:SetWidth(510); cursorHelp:SetJustifyH("LEFT")
-    cursorHelp:SetText(L["RMB: BUTTON2 here, or use the button below to enable toggle.\nCtrl/Shift/Alt keep cursor. Soft mode: LMB selects only.\nOtherwise LMB interacts; open UI keeps normal clicks."])
+    cursorHelp:SetText(L["RMB: BUTTON2 here, or use the button below to enable toggle.\nCtrl/Shift/Alt keep cursor. Mouse look: LMB selects.\nFree RMB cursor: LMB interacts; UI keeps normal clicks."])
     Button(settingsContent, L["Use RMB to toggle cursor"], 20, -867, 280, function()
         if InCombatLockdown() then
             DEFAULT_CHAT_FRAME:AddMessage(L["Nozdor Action: assign keys outside combat."]); return
@@ -526,7 +525,7 @@ local function CreateSettings()
     Check("NozdorActionSoftTarget", L["Soft target: select with LMB"], "softTarget", -1350)
     local softHelp = settingsContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     softHelp:SetPoint("TOPLEFT", 20, -1390); softHelp:SetWidth(510); softHelp:SetJustifyH("LEFT")
-    softHelp:SetText(L["Hover highlights without changing target. LMB selects only; Interact uses its assigned key.\nYour selected target stays until another click. Disable soft targeting to restore automatic selection."])
+    softHelp:SetText(L["Mouse look: hover previews, LMB selects. Use Interact key to talk or loot.\nFree RMB cursor: LMB interacts at the cursor. Selected target stays until another click."])
     settings.refresh, settings.okay, settings.cancel = RefreshControls, Sync, Sync
     settings:SetScript("OnShow", RefreshControls)
     settings:SetScript("OnHide", Sync)
