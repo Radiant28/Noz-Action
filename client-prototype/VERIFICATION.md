@@ -1,4 +1,13 @@
-# Verification: 0.3.15, 2026-11-05
+# Verification: 0.3.16, 2026-11-05
+
+## 0.3.16 game-object preview and explicit native visual hover
+
+- User confirms OFF cursor now works but LMB still fails, and reticle hover lacks silhouettes for players, mailbox and ore. Local saved bindings contained exactly one BUTTON1 NONE assignment. With WoW closed, that one assignment was backed up outside the game and restored to CAMERAORSELECTORMOVE; an exact byte comparison verified all other bindings unchanged. This is a local user-settings repair, not an automatic reset in distributed addon code. Private binding backups are excluded from source/release.
+- Root cause for mailbox/ore preview: only PickUnit's eligible unit GUID was passed to SetSoftHover; kind-3 game objects returned zero. Preview identity is now separate: eligible kind-2 units retain acquisition filtering, while kind-3 hits are re-resolved and checked for the game-object descriptor mask 0x20. Only the eligible unit GUID goes to LMB hard selection. Hovering never invokes interaction.
+- Added explicit native visual hover refresh after mouseover publication. Local original-EXE disassembly of 0x743C70 (thiscall object,int, ret4) shows it enables bit (24+channel) in object+0xBC and applies model hover color. Matching 0x743BC0 clears only that channel. The modification uses channel 1, matching the stock mouseover call in previously recorded 0x51F790; hard-target channel 0 stays intact. Refresh resolves the live object each time, clears the old owned hover on changes/pause and skips missing objects. The two functions are recorded and guarded, bringing the count to 78.
+- Fresh IDA requests stalled, so no new IDA results are claimed for the visual helpers. Evidence is local objdump and the exact original EXE SHA256 plus recorded function bytes. The existing IDA mouseover evidence remains applicable.
+- Nine CTest checks passed: preview filtering for valid unit/game object versus terrain/invalid masks/rejected units, visual hover callbacks for same target refresh, transitions, cleanup and despawn, plus existing OFF/free-cursor routing, CALL lifecycle, Lua locales, interaction and loader checks. Fixtures do not render game models or verify custom client outline effects.
+- Bundle: addon and DLL 0.3.16, protocol 9. Full restart required. Manual confirmation: OFF LMB picks an NPC/player, reticle hover highlights players/NPCs/mail/ore, LMB selects units without opening windows, interaction key handles mailbox/ore, cleanup leaves hard-target highlight, and free cursor/Cell remain functional.
 
 ## 0.3.15 stock input restoration while OFF / free cursor
 

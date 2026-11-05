@@ -371,7 +371,7 @@ local function CreateSettings()
     settings.name = "Nozdor Action"
     settings:Hide()
     local title = settings:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.15")
+    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.16")
     local scroll = CreateFrame("ScrollFrame", "NozdorActionSettingsScroll", settings, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", settings, "TOPLEFT", 0, -45)
     scroll:SetPoint("BOTTOMRIGHT", settings, "BOTTOMRIGHT", -30, 8)

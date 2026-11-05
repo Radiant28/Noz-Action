@@ -16,6 +16,19 @@ struct Decision {
     std::uint64_t target = 0;
 };
 
+inline std::uint64_t HoverGuid(int kind, std::uint64_t raw, std::uint64_t unit, unsigned objectMask) {
+    if (kind == 2) return unit;
+    return kind == 3 && (objectMask & 0x20) ? raw : 0;
+}
+
+template<class Lookup, class Change>
+void UpdateHoverHighlight(std::uint64_t previous, std::uint64_t next, Lookup lookup, Change change) {
+    if (previous && previous != next)
+        if (auto* object = lookup(previous)) change(object, false);
+    if (next)
+        if (auto* object = lookup(next)) change(object, true);
+}
+
 struct ClickSelection {
     std::uint64_t pending = 0;
     std::uint32_t clickedAt = 0;

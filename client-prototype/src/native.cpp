@@ -36,6 +36,7 @@ using UnitRelation = bool (__attribute__((thiscall))*)(void*, void*);
 using SetTarget = void (__cdecl*)(Guid);
 using TrackObject = int (__attribute__((thiscall))*)(void*, Guid);
 using HoverChange = void* (__cdecl*)(const Guid*);
+using HighlightObject = void (__attribute__((thiscall))*)(void*, int);
 using InteractGuid = int (__cdecl*)(Guid);
 using Lootable = bool (__attribute__((thiscall))*)(void*, DWORD);
 using GetCursor = void (__cdecl*)(LONG*, LONG*);
@@ -62,7 +63,7 @@ template<class T> T& Field(void* object, std::size_t offset) {
 }
 
 constexpr char kApiName[] = "NozdorActionNative";
-constexpr char kVersion[] = "0.3.15";
+constexpr char kVersion[] = "0.3.16";
 HANDLE g_log = INVALID_HANDLE_VALUE;
 bool g_enabled = false, g_autoTarget = true, g_captured = false;
 bool g_active = false, g_inFrame = false;
@@ -302,13 +303,22 @@ int __cdecl NativeApi(Lua* state) {
 bool SetHoverHook(bool enabled);
 bool RestoreCursorWindow();
 
+void UpdateSoftHighlight(Guid previous, Guid next) {
+    action::UpdateHoverHighlight(previous, next,
+        [](Guid guid) { return Function<Resolve>(0x4D4DB0)(guid, 1, "NozdorAction", 8); },
+        [](void* object, bool enabled) {
+            Function<HighlightObject>(enabled ? 0x743C70 : 0x743BC0)(object, 1);
+        });
+}
+
 void ClearSoftHover() {
     const Guid owned = g_softHover;
     void* world = g_softWorld;
     g_softHover = 0;
     g_softWorld = nullptr;
-    if (owned && world && world == *reinterpret_cast<void**>(0xB7436C) &&
-        *reinterpret_cast<Guid*>(0xBD07A0) == owned) {
+    if (!owned || !world || world != *reinterpret_cast<void**>(0xB7436C)) return;
+    UpdateSoftHighlight(owned, 0);
+    if (*reinterpret_cast<Guid*>(0xBD07A0) == owned) {
         // Stock mouse look may already have cached zero while our hover stayed visible.
         const Guid clear[] = {0, owned};
         Function<HoverChange>(0x51FB60)(clear);
@@ -317,12 +327,15 @@ void ClearSoftHover() {
 }
 
 void SetSoftHover(void* world, Guid pick) {
+    const Guid previous = g_softHover;
     g_softHover = pick;
     g_softWorld = pick ? world : nullptr;
     // UI unit frames can change mouseover without changing the world's last hover GUID.
     if (Field<Guid>(world, 0x2C8) == pick && *reinterpret_cast<Guid*>(0xBD07A0) != pick)
         Function<TrackObject>(0x4F5980)(world, 0);
     Function<TrackObject>(0x4F5980)(world, pick);
+    // Native mouseover may skip visual highlighting during mouse look; own only its hover bit.
+    UpdateSoftHighlight(previous, pick);
 }
 
 void ReleaseMouse(const char* reason) {
@@ -746,7 +759,13 @@ void Tick(void* world) {
     g_pick = PickUnit(world, player);
     if (g_softTarget && g_autoTarget) {
         if (!SetHoverHook(true)) { ReleaseMouse("hover hook unavailable"); return; }
-        SetSoftHover(world, g_pick);
+        unsigned objectMask = 0;
+        if (g_probe.kind == 3 && g_probe.raw) {
+            void* object = Function<Resolve>(0x4D4DB0)(g_probe.raw, 1, "NozdorAction", 9);
+            void* descriptor = object ? Field<void*>(object, 8) : nullptr;
+            if (descriptor) objectMask = Field<unsigned>(descriptor, 8);
+        }
+        SetSoftHover(world, action::HoverGuid(g_probe.kind, g_probe.raw, g_pick, objectMask));
     } else {
         SetHoverHook(false);
         ClearSoftHover();
@@ -867,7 +886,7 @@ BOOL WINAPI DllMain(HINSTANCE self, DWORD reason, LPVOID reserved) {
     if (reason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(self);
         OpenLog(self);
-        Log("NozdorAction 0.3.15 / mounted profiles / stock camera / reticles / x86 / exact client code guards");
+        Log("NozdorAction 0.3.16 / mounted profiles / stock camera / reticles / x86 / exact client code guards");
         if (!Install()) {
             if (g_log != INVALID_HANDLE_VALUE) CloseHandle(g_log);
             g_log = INVALID_HANDLE_VALUE;

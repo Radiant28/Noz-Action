@@ -1,4 +1,6 @@
-# Nozdor Action 0.3.15
+# Nozdor Action 0.3.16
+
+- [x] Preview game objects separately from unit hard targets; refresh native hover highlight for players/NPCs/mail/ore and clear only the hover channel.
 
 - [x] Restore stock mouse input while OFF and stock hover callbacks in free cursor/pause; test real hidden-window subclass restoration and executed CALL on/off cycles.
 

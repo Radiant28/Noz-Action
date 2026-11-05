@@ -6,6 +6,24 @@
 #include "../src/camera_math.h"
 
 int main(int argc, char** argv) {
+    assert(action::HoverGuid(2, 42, 42, 0x19) == 42); // Player or NPC.
+    assert(action::HoverGuid(2, 42, 0, 0x19) == 0); // Rejected unit stays rejected.
+    assert(action::HoverGuid(3, 43, 0, 0x21) == 43); // Mailbox / ore game object.
+    assert(action::HoverGuid(3, 43, 0, 0x19) == 0);
+    assert(action::HoverGuid(1, 43, 0, 0x21) == 0);
+    assert(action::HoverGuid(0, 0, 0, 0) == 0);
+    unsigned highlighted[2] = {}, cleared[2] = {};
+    int objects[2] = {0, 1};
+    auto lookup = [&](std::uint64_t guid) -> int* { return guid == 42 ? &objects[0] : guid == 43 ? &objects[1] : nullptr; };
+    auto highlight = [&](int* object, bool enabled) { ++(enabled ? highlighted[*object] : cleared[*object]); };
+    action::UpdateHoverHighlight(0, 42, lookup, highlight);
+    action::UpdateHoverHighlight(42, 42, lookup, highlight);
+    assert(highlighted[0] == 2 && cleared[0] == 0);
+    action::UpdateHoverHighlight(42, 43, lookup, highlight);
+    assert(cleared[0] == 1 && highlighted[1] == 1);
+    action::UpdateHoverHighlight(43, 0, lookup, highlight);
+    assert(cleared[1] == 1);
+    action::UpdateHoverHighlight(99, 99, lookup, highlight); // Despawned objects are not dereferenced.
     action::ClickSelection click;
     assert(click.Take(1000) == 0);
     click.Queue(42, 1000);
