@@ -15,6 +15,8 @@ local function Region(name, parent)
     function object:GetCenter() return rawget(self, "centerX") or 640, rawget(self, "centerY") or 360 end
     function object:SetWidth(value) self.width = value end
     function object:SetHeight(value) self.height = value end
+    function object:SetID(value) self.id = value end
+    function object:GetID() return rawget(self, "id") end
     function object:SetScript(event, callback) self.scripts[event] = callback end
     function object:HookScript(event, callback)
         local original = self.scripts[event]
@@ -98,6 +100,12 @@ function CloseAllBags()
         if _G["ContainerFrame" .. i] then _G["ContainerFrame" .. i]:Hide() end
     end
     if ElvUI_ContainerFrame then ElvUI_ContainerFrame:Hide() end
+end
+function CloseBag(id)
+    for i = 1, NUM_CONTAINER_FRAMES or 13 do
+        local frame = _G["ContainerFrame" .. i]
+        if frame and frame:IsShown() and frame:GetID() == id then frame:Hide(); return end
+    end
 end
 function LoadAddOn() error("Binding UI already mocked") end
 function GetCurrentKeyBoardFocus() return environment.focus end
@@ -405,19 +413,48 @@ assert(native.interactions == beforeClose + 1, "A later press can interact after
 GossipFrame:Show(); NozdorAction.Toggle(); NozdorAction.Interact()
 assert(GossipFrame:IsVisible() and closedGossip == 1, "OFF leaves dialogs alone")
 GossipFrame:Hide(); NozdorAction.Toggle(); Update()
--- Only repeat-interaction on mail closes bags, including the ElvUI container hook.
+-- Repeat-interaction closes bags with the dialog; existing bag addon hooks still run.
 ContainerFrame1, ContainerFrame2 = Region(nil, UIParent), Region(nil, UIParent)
 ElvUI_ContainerFrame = Region(nil, UIParent)
 ContainerFrame1:Hide(); ContainerFrame2:Hide(); ElvUI_ContainerFrame:Hide()
 function CloseMail() MailFrame:Hide() end
 local bagsBeforeMail, interactionsBeforeMail = closedBags, native.interactions
 GossipFrame:Show(); ContainerFrame1:Show(); NozdorAction.Interact()
-assert(ContainerFrame1:IsVisible() and closedBags == bagsBeforeMail, "Other dialogs leave bags alone")
+assert(not ContainerFrame1:IsVisible() and closedBags == bagsBeforeMail + 1, "Closing another dialog also closes its bags")
 MailFrame:Show(); ContainerFrame2:Show(); ElvUI_ContainerFrame:Show(); Update()
 NozdorAction.Interact(); Update()
 assert(not MailFrame:IsVisible() and not ContainerFrame1:IsVisible() and not ContainerFrame2:IsVisible())
-assert(not ElvUI_ContainerFrame:IsVisible() and closedBags == bagsBeforeMail + 1)
+assert(not ElvUI_ContainerFrame:IsVisible() and closedBags == bagsBeforeMail + 2)
 assert(native.interactions == interactionsBeforeMail and native.cursorAllowed, "Mail closes bags without a new interaction")
+-- Stock CloseBackpack deliberately preserves a pre-opened backpack; ElvUI is absent.
+local normalCloseAllBags, elvBags = CloseAllBags, ElvUI_ContainerFrame
+ElvUI_ContainerFrame = nil
+CloseAllBags = function()
+    closedBags = closedBags + 1
+    if not ContainerFrame1.backpackWasOpen then CloseBag(0) end
+    for id = 1, NUM_CONTAINER_FRAMES or 13 do CloseBag(id) end
+end
+ContainerFrame1:SetID(0); ContainerFrame2:SetID(3)
+ContainerFrame1.backpackWasOpen = 1
+ContainerFrame1:Show(); Update()
+local bagOnlyInteractions = native.interactions
+NozdorAction.Interact()
+assert(ContainerFrame1:IsVisible() and native.interactions == bagOnlyInteractions, "A bag alone is not a dialog to close")
+MailFrame:Show(); environment.focus = true; NozdorAction.Interact()
+assert(MailFrame:IsVisible() and ContainerFrame1:IsVisible(), "Typing keeps the dialog and bags open")
+environment.focus = nil; MailFrame:Hide(); ContainerFrame1:Hide()
+for _, name in ipairs({"MailFrame", "MerchantFrame", "BankFrame", "AuctionFrame", "AuctionHouseFrame", "GossipFrame"}) do
+    local dialog = _G[name]
+    dialog:Show(); ContainerFrame1:Show(); ContainerFrame2:Show(); Update()
+    local beforeStockClose = native.interactions
+    NozdorAction.Interact(); Update()
+    assert(not dialog:IsVisible() and not ContainerFrame1:IsVisible() and not ContainerFrame2:IsVisible(),
+        name .. " must close even a pre-opened stock backpack without the ElvUI hook")
+    assert(ContainerFrame1.backpackWasOpen == 1, "Do not overwrite stock bag bookkeeping")
+    assert(native.interactions == beforeStockClose and native.cursorAllowed)
+end
+CloseAllBags, ElvUI_ContainerFrame = normalCloseAllBags, elvBags
+ContainerFrame1.backpackWasOpen = nil
 -- Scan visible bags and registered panels dynamically, including load-on-demand addon windows.
 local function PausesAndResumes(name)
     _G[name] = Region(nil, UIParent)

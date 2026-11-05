@@ -249,7 +249,9 @@ local function CloseInteractionWindow()
             local close = _G[entry[2]]
             if entry[1] == "AuctionHouseFrame" then HideUIPanel(frame)
             elseif type(close) == "function" then close() else HideUIPanel(frame) end
-            if entry[1] == "MailFrame" and type(CloseAllBags) == "function" then CloseAllBags() end
+            if type(CloseAllBags) == "function" then CloseAllBags() end
+            -- Stock CloseAllBags preserves a backpack marked backpackWasOpen.
+            if type(CloseBag) == "function" then CloseBag(0) end
             return true
         end
     end
@@ -433,7 +435,7 @@ local function CreateSettings()
     settings.name = "Nozdor Action"
     settings:Hide()
     local title = settings:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.18")
+    title:SetPoint("TOPLEFT", 16, -16); title:SetText("Nozdor Action 0.3.19")
     local scroll = CreateFrame("ScrollFrame", "NozdorActionSettingsScroll", settings, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", settings, "TOPLEFT", 0, -45)
     scroll:SetPoint("BOTTOMRIGHT", settings, "BOTTOMRIGHT", -30, 8)
@@ -584,7 +586,7 @@ local function CreateSettings()
     Slider("NozdorActionMountCameraHeight", L["Mounted camera height"], -1, 8, 0.05, "mountCameraHeight", -1215)
     local profileHelp = settingsContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     profileHelp:SetPoint("TOPLEFT", 20, -1270); profileHelp:SetWidth(510); profileHelp:SetJustifyH("LEFT")
-    profileHelp:SetText(L["Stock camera keeps the reticle and targeting, without shoulder offsets or preset zoom.\nMounted priority: stock camera, then independent profile, then adaptive extras.\nThe independent profile uses its own distance, height and shoulder; walls still clip it.\nInteract again to close an open NPC, mail or loot window."])
+    profileHelp:SetText(L["Stock camera keeps the reticle and targeting, without shoulder offsets or preset zoom.\nMounted priority: stock camera, then independent profile, then adaptive extras.\nThe independent profile uses its own distance, height and shoulder; walls still clip it.\nInteract again to close an open NPC, mail or loot window and bags."])
     Check("NozdorActionSoftTarget", L["Soft target: select with LMB"], "softTarget", -1350)
     local softHelp = settingsContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     softHelp:SetPoint("TOPLEFT", 20, -1390); softHelp:SetWidth(510); softHelp:SetJustifyH("LEFT")

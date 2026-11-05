@@ -1,4 +1,4 @@
-# Nozdor Action 0.3.18
+# Nozdor Action 0.3.19
 
 - [x] Preview game objects separately from unit hard targets; refresh native hover highlight for players/NPCs/mail/ore and clear only the hover channel.
 
@@ -40,3 +40,5 @@ The user confirmed 0.2.2 in-game. Automated checks and static evidence support 0
 - [x] Generic client nameplates and visible child frames support aim/cursor hints via exact GUIDs; UI and range validation preserved.
 
 - [x] Native original-client nameplate GUID bridge without C_NamePlate; native hierarchy bypasses per-instance addon overrides.
+
+- [x] Close all bags and force stock backpack ID zero closed with repeated interaction; preserve typing/OFF/UI guards, without requiring ElvUI.

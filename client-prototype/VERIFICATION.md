@@ -1,4 +1,11 @@
-# Verification: 0.3.18, 2026-11-05
+# Verification: 0.3.19, 2026-11-05
+
+## 0.3.19 close pre-opened stock backpack with interaction dialogs (addon only)
+
+- User removed/disabled ElvUI and reports mail closes but the backpack stays open. A direct in-game CloseAllBags() command also left it open. Read-only extraction from Data/ruRU/patch-ruRU-i.mpq of Interface/FrameXML/ContainerFrame.lua confirms CloseAllBags calls CloseBackpack plus CloseBag(1..NUM_CONTAINER_FRAMES); CloseBackpack deliberately skips bag ID zero while ContainerFrame1.backpackWasOpen is set. CloseBag(0) has no such preservation check and hides the normal container through its existing OnHide path. The installed ElvUI bag module previously supplied an additional CloseAllBags hook.
+- The shared dialog-close path now calls CloseAllBags to preserve compatibility hooks, then explicitly CloseBag(0). It runs for all supported interaction dialogs, rather than mail alone. It does not alter stock bookkeeping flags, bind keys, close a bag by itself, or dispatch a new interaction while closing. Existing mode, typing and options guards remain.
+- The regression with no ElvUI global and a pre-opened stock backpack failed before the fix. It now passes for mail, merchant, bank, old/custom auction and gossip, along with additional stock bags, ordinary addon-hook closure, chat protection, bag-only preservation and cursor resumption. All nine CTest checks pass across English, Russian and fallback addon locales.
+- Addon 0.3.19, unchanged native DLL 0.3.18, protocol 11. Existing 0.3.18 installations need only addon replacement and /reload. Runtime archive retains the exact previous DLL bytes; original WoW.exe remains unchanged. Final in-game confirmation of mail/backpack closure is still required. Fixtures model stock API behavior and do not execute the live game UI.
 
 ## 0.3.18 original-client nameplate GUID bridge
 
